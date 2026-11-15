@@ -14,6 +14,8 @@ Projeto inicial ESP-IDF **5.4.2**, ESP32-S3 N16R8, para BLenhance2.1 / BP1048B2.
 
 ## Interface
 
+Evolução planejada: [roadmap de telemetria e proteção](docs/roadmap_telemetria_protecao.md), com VCC, NTCs, monitoramento no celular, isolamento USB, clipping, corrente e supervisor local de proteção. São propostas; sensores e proteções ainda não estão implementados.
+
 - Abas estéreo (Music Pre EQ **0x91 / aba 2**) e subwoofer (Rec Pre EQ **0x93 / aba 4**). O encaminhamento físico do estéreo ainda precisa de confirmação na bancada.
 - Quatro botões de preset imediatamente abaixo das abas. Cada preset guarda as duas saídas. Trocar de preset descarta edições não salvas sem confirmação, carrega e aplica automaticamente ambos os EQs. Reset apaga o slot salvo e aplica EQ plano com pré-ganho 0 às duas saídas.
 - Preset 1 provisionado uma única vez com o snapshot de 14/11, registrado em `preset1_acp.json` e `main/preset1_acp.h`. Marcador NVS `acp_seed_v1` / marcador localStorage próprio preserva saves e resets posteriores. Slot 5 antigo não é apagado, mas está fora da interface/API.
