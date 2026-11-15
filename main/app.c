@@ -11,6 +11,7 @@
 #include "dsp_usb.h"
 #include "esp_timer.h"
 #include "presets.h"
+#include "esp_log.h"
 
 extern const unsigned char html_start[] asm("_binary_index_html_start");
 extern const unsigned char html_end[] asm("_binary_index_html_end");
@@ -113,4 +114,5 @@ void app_main(void) {
         {.uri="/api/status",.method=HTTP_GET,.handler=status}};
     for(size_t i=0;i<sizeof(routes)/sizeof(routes[0]);i++)ESP_ERROR_CHECK(httpd_register_uri_handler(server,&routes[i]));
     presets_register(server);
+    ESP_LOGI("bldsp", "Ready: Wi-Fi BLDSP-Control, http://192.168.4.1/; USB host waiting for DSP");
 }

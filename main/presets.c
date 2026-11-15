@@ -33,7 +33,7 @@ static void flat(uint16_t *w) {
     for(int i=0;i<10;i++){w[5+5*i]=1000;w[6+5*i]=724;}
 }
 esp_err_t presets_init(void){return seed_acp_preset();}
-esp_err_t presets_read(int slot,uint16_t *sub,uint16_t *stereo) {
+esp_err_t presets_read(int slot,uint16_t sub[53],uint16_t stereo[53]) {
     if(slot<1||slot>4)return ESP_ERR_INVALID_ARG;
     nvs_handle_t store;esp_err_t err=nvs_open("eq_presets",NVS_READONLY,&store);
     if(err!=ESP_OK)return err;

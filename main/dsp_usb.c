@@ -63,6 +63,7 @@ static esp_err_t control(uint8_t type, uint8_t req, uint16_t value,
 }
 static void close_device(void) {
     if(!dev || in_transfer) return;
+    ESP_LOGI(TAG,"Closing USB device");
     if(iface>=0) usb_host_interface_release(client,dev,iface);
     usb_host_device_close(client,dev);
     dev=NULL;iface=-1;gone=false;profile_ok=false;boot_ready=false;boot_retry=0;
@@ -173,10 +174,12 @@ static bool apply_boot_preset(void) {
     uint16_t *banks[]={stereo,sub};const uint8_t modules[]={0x91,0x93};
     for(int i=0;i<2;i++) {
         request_t r={.op=0,.module=modules[i]};
-        if(execute(&r)!=ESP_OK)return false;
+        err=execute(&r);
+        if(err!=ESP_OK){ESP_LOGW(TAG,"Read module %02x: %s",modules[i],esp_err_to_name(err));return false;}
         banks[i][2]=r.words[2];memcpy(r.words,banks[i],106);r.op=1;
-        if(execute(&r)!=ESP_OK)return false;
-        for(int j=0;j<53;j++)if(j!=2 && r.words[j]!=banks[i][j])return false;
+        err=execute(&r);
+        if(err!=ESP_OK){ESP_LOGW(TAG,"Apply module %02x: %s",modules[i],esp_err_to_name(err));return false;}
+        for(int j=0;j<53;j++)if(j!=2 && r.words[j]!=banks[i][j]){ESP_LOGW(TAG,"Module %02x mismatch word %d",modules[i],j);return false;}
     }
     ESP_LOGI(TAG,"Preset 1 applied to stereo + sub; no DSP flash save");return true;
 }
@@ -206,6 +209,7 @@ void dsp_usb_start(void) {
     configASSERT(lock && done && queue);
     usb_host_config_t cfg={.intr_flags=ESP_INTR_FLAG_LEVEL1};
     ESP_ERROR_CHECK(usb_host_install(&cfg));
+    ESP_LOGI(TAG,"USB host installed; native D- GPIO19, D+ GPIO20");
     xTaskCreate(library_task,"usb_lib",4096,NULL,5,NULL);
     xTaskCreate(client_task,"dsp_usb",6144,NULL,5,NULL);
 }
@@ -219,5 +223,5 @@ static esp_err_t call(int op,uint8_t module,const uint16_t *in,uint16_t *out) {
     if(err==ESP_OK && out)memcpy(out,request.words,106);
     xSemaphoreGive(lock);return err;
 }
-esp_err_t dsp_read_eq(uint8_t module,uint16_t *w){return call(0,module,NULL,w);}
-esp_err_t dsp_apply_eq(uint8_t module,const uint16_t *w,uint16_t *actual){return call(1,module,w,actual);}
+esp_err_t dsp_read_eq(uint8_t module,uint16_t w[DSP_EQ_WORDS]){return call(0,module,NULL,w);}
+esp_err_t dsp_apply_eq(uint8_t module,const uint16_t w[DSP_EQ_WORDS],uint16_t actual[DSP_EQ_WORDS]){return call(1,module,w,actual);}
