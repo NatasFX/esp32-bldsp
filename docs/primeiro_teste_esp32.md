@@ -24,3 +24,20 @@ Get-Content .\serial-monitor.log -Tail 60 -Wait
 ```
 
 O arquivo inicial contém captura de boot pelo Python; o PuTTY foi aberto depois em modo append. Ausência de linhas novas pode significar firmware ocioso, não falha da conexão. Pressionar RESET no ESP permite observar o boot no monitor aberto.
+
+## USB HID confirmado após fechar USB-OTG
+
+Em 15/11/2026, após usuário fechar USB-OTG e manter IN-OUT aberto, nova captura serial confirmou:
+
+```text
+I (3545) dsp_usb: BLDSP 8888:171e
+I (3545) dsp_usb: Vendor HID interface 0, reports 256 bytes
+E (3725) USBH: Device 1 gone
+W (3745) dsp_usb: Read module 91: ESP_ERR_INVALID_STATE
+I (3745) dsp_usb: Closing USB device
+I (4235) dsp_usb: BLDSP 8888:1719
+I (4255) dsp_usb: Vendor HID interface 4, reports 256 bytes
+I (4775) dsp_usb: Preset 1 applied to stereo + sub; no DSP flash save
+```
+
+Confirmados no ESP físico: descoberta dinâmica da interface HID, descritor de reports de 256 bytes, verificação do perfil e aplicação/leitura de retorno do preset 1 para módulos 91 e 93. A troca 171E → 1719 ocorreu neste boot; sua causa não foi determinada. Não inferir continuidade de Bluetooth a partir do PID. Permanecem pendentes confirmação auditiva/roteamento das saídas pelo usuário, testes do front via AP, persistência e reconexão prolongada.
