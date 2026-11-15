@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1020"><title>BLDSP · Equalizador</title>
+<style>
+:root{color-scheme:dark;font:15px system-ui;background:#0b1020;color:#e5e7eb;--accent:#fbbf72}*{box-sizing:border-box}body{max-width:1040px;margin:auto;padding:20px 16px 60px}h1{font-size:27px;margin:0 0 6px}h2{font-size:18px;margin:0}p{line-height:1.5;color:#aebbd0}button,input,select{font:inherit}button{padding:12px 16px;border:1px solid transparent;border-radius:10px;background:var(--accent);color:#14202b;font-weight:650;cursor:pointer}button.secondary{background:#243148;color:#e5e7eb}button:disabled{opacity:.4;cursor:default}.tabs{display:flex;gap:8px;margin:20px 0 12px}.tabs button{flex:1;background:#152037;color:#aebbd0;border-color:#2e3b53}.tabs button[aria-selected=true]{border-color:var(--accent);color:var(--accent);background:#202b3d}.actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.chart-panel{border:1px solid #2e3b53;background:#10192a;border-radius:16px;padding:16px;margin:16px 0}.chart-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.pill{font-size:12px;color:var(--accent)}canvas{width:100%;height:280px;display:block;margin:8px 0 0;touch-action:pan-y}.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#b4c2d6;margin:6px 0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.chart-options{display:flex;gap:15px;flex-wrap:wrap;align-items:center}.chart-options label{font-size:12px;display:flex;gap:6px;align-items:center;flex-direction:row}.chart-options select{padding:5px;width:auto}.chart-note{font-size:11px;line-height:1.45;margin:12px 0 0}.mini{font-size:12px;color:#aebbd0}fieldset{border:1px solid #2e3b53;border-radius:12px;margin:12px 0;padding:14px;min-width:0}legend{color:var(--accent);padding:0 6px}label{display:flex;flex-direction:column;gap:6px;color:#b8c6dc}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.grid .type{grid-column:1/-1}input[type=number],select{width:100%;min-width:0;background:#111b2e;color:#fff;border:1px solid #40516c;padding:10px;border-radius:8px}.check{flex-direction:row;align-items:center;margin:0}input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}input[type=range]{width:100%;accent-color:var(--accent)}.master-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center}.band-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.band-head button{padding:6px 10px;background:#25334c;color:#e5e7eb;font-size:12px}.band.selected{border-color:var(--accent)}#bands{display:grid;grid-template-columns:1fr;gap:10px}#bands fieldset{margin:0}.sliders{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.sliders label{font-size:12px}#summary{font-size:13px;margin:10px 0}.intro{margin:0;font-size:13px}#selection{margin-top:12px;font-size:13px;color:var(--accent)}@media(min-width:680px){#bands{grid-template-columns:1fr 1fr}canvas{height:320px}.actions button{min-width:145px}}@media(max-width:400px){body{padding:16px 10px}.chart-panel{padding:10px}.actions button{padding:11px 10px;font-size:13px}}
+
+/* The graph alone stays visible; all controls above it scroll away. */
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:22px}.eq-switch{padding:10px 12px;border:1px solid #40516c;border-radius:12px;background:#152037;white-space:nowrap}.eq-switch label{font-size:12px;flex-direction:row;align-items:center;gap:9px}.eq-switch input{width:22px;height:22px}.pregain-panel{background:#152037;border:1px solid #2e3b53;border-radius:14px;padding:15px;margin:14px 0}.pregain-head{display:flex;justify-content:space-between;align-items:center}.pregain-head label{color:#e5e7eb;font-weight:600}.pregain-head output{font-variant-numeric:tabular-nums;color:var(--accent);font-size:18px;min-width:95px;text-align:right}.pregain-endpoints{display:flex;justify-content:space-between;font-size:11px;color:#91a3bf}.pregain-panel input{margin:16px 0 8px}.chart-panel{position:sticky;top:0;z-index:20;padding:7px 10px 4px;margin:12px 0;background:#10192a;box-shadow:0 10px 20px #0b1020cc;border-radius:0 0 14px 14px}.chart-panel canvas{height:clamp(180px,34svh,285px);margin:0}.chart-context{margin-top:16px}.chart-note{margin:10px 0}.presets{border:1px solid #2e3b53;border-radius:14px;padding:14px;margin:16px 0}.preset-row{display:grid;grid-template-columns:minmax(0,100px) max-content max-content;gap:6px;align-items:center;margin-top:10px}.preset-row select{width:100%;min-width:0;padding:10px 6px;font-size:13px}.preset-row button{font-size:13px;padding:11px 9px;white-space:nowrap}.preset-hint{font-size:12px;margin:8px 0 0}#curve-state{font-size:12px}.chart-top{margin:12px 0 5px}#selection{margin:8px 0 14px}#pregain{display:none}
+
+.filter-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;align-items:end}.filter-grid label,.filter-type-label{font-size:12px}.filter-grid input{padding:10px 5px;text-align:center;font-variant-numeric:tabular-nums;font-size:14px}.filter-grid .type{grid-column:auto}.band{padding:12px}.band legend{padding:0 5px}.band legend label{font-size:14px;font-weight:600;color:var(--accent);gap:8px}.band.collapsed{padding-top:5px;padding-bottom:7px;background:#10192a}.band.collapsed legend label{color:#8c9db7}.band-body[hidden],.type-menu[hidden]{display:none}.filter-type{position:relative;min-width:0}.filter-type-label{display:block;color:#b8c6dc;margin-bottom:6px}.type-trigger{height:39px;width:100%;display:flex;align-items:center;justify-content:center;gap:3px;background:#142338;color:#e5e7eb;border:1px solid #40516c;padding:5px;border-radius:8px}.type-trigger svg{width:30px;height:20px;flex-shrink:1}.type-trigger small{font-size:10px;color:#d3e1f5}.type-trigger .chevron{font-size:9px;color:#91a3bf}.type-menu{position:absolute;top:100%;left:0;width:196px;padding:5px;z-index:5;background:#1b2940;border:1px solid #536681;border-radius:10px;box-shadow:0 8px 24px #0009}.type-menu button{display:flex;align-items:center;gap:12px;width:100%;padding:10px;background:transparent;color:#dce6f6;text-align:left;font-size:13px}.type-menu button:hover,.type-menu button[aria-selected=true]{background:#30405a}.type-menu svg{width:34px;height:20px;color:var(--accent)}.band-focus{display:block;margin:10px 0 0 auto;background:transparent;color:#91a3bf;font-size:11px;padding:4px 0}.filter-grid select[hidden]{display:none}.band .sliders{margin-top:10px;gap:12px}@media(max-width:350px){.type-trigger small{display:none}.filter-grid input{font-size:12px}}
+
+.parameter-input{touch-action:manipulation;cursor:pointer;user-select:none;-webkit-user-select:none;caret-color:transparent;transition:background .15s,border-color .15s}.parameter-input[data-active=true]{background:#332b21;border-color:#fbbf72;box-shadow:0 0 0 1px #fbbf7244;color:#ffe0b5}.parameter-input.q-control[data-active=true]{background:#2b2441;border-color:#b6a0ff;box-shadow:0 0 0 1px #b6a0ff44;color:#e5dcff}.parameter-input:not([readonly]){cursor:text;user-select:text;-webkit-user-select:text;caret-color:auto;background:#152b3e;outline:2px solid #8bcaff}.parameter-range[data-param=gain]{accent-color:#fbbf72}.parameter-range[data-param=q]{accent-color:#b6a0ff}.parameter-caption[data-param=gain]{color:#fbbf72}.parameter-caption[data-param=q]{color:#b6a0ff}
+.presets{padding:10px;margin:8px 0 12px}.preset-buttons{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.preset-buttons button{background:#152037;border:1px solid #40516c;color:#aebbd0;padding:10px;font-size:16px}.preset-buttons button[aria-pressed=true]{color:var(--accent);border-color:var(--accent);background:#263044}.preset-footer{display:flex;gap:8px;align-items:center;margin-top:10px}.preset-footer .mini{margin-right:auto;font-size:11px}.preset-footer button{font-size:12px;padding:8px;white-space:nowrap}
+.eq-switch{position:relative;display:flex;align-items:center;gap:10px;padding:10px}.sync-indicator{display:grid;place-items:center;flex-shrink:0;width:28px;height:28px;min-width:28px;padding:3px;border:0;background:transparent;color:#75e0ba;border-radius:50%;cursor:pointer}.sync-indicator svg{width:21px;height:21px}.sync-indicator[data-state=pending]{color:#fbbf72}.sync-indicator[data-state=pending] svg{animation:sync-spin 1.2s linear infinite}.sync-indicator[data-state=error]{color:#fb7185}.sync-detail{position:absolute;right:0;top:calc(100% + 8px);width:min(300px,85vw);z-index:50;white-space:normal;padding:12px 14px;border:1px solid #40516c;border-radius:12px;background:#19243a;color:#dce6f6;font-size:12px;box-shadow:0 8px 24px #0008;line-height:1.5}.sync-detail[hidden]{display:none}@keyframes sync-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.sync-indicator[data-state=pending] svg{animation:none}}@media(max-width:360px){.page-head{gap:10px}.page-head h1{font-size:24px}}
+</style></head><body>
+<header class="page-head"><div><h1>Equalizador</h1><p class="intro">BLDSP · controle de áudio 2.1</p></div><div class="eq-switch"><label><input id="enabled" type="checkbox" disabled>EQ ativo</label><button id="sync-status" class="sync-indicator" type="button" data-state="pending" aria-label="Sincronizando" title="Sincronizando" aria-live="polite"></button><div id="status" class="sync-detail" role="status" aria-live="polite" hidden>Conectando…</div></div></header>
+<nav class="tabs" role="tablist" aria-label="Saída de áudio"><button id="tab-stereo" role="tab" aria-selected="false">Estéreo · L + R</button><button id="tab-sub" role="tab" aria-selected="true">Subwoofer</button></nav>
+<section class="presets"><div class="preset-buttons" role="group" aria-label="Presets"><button id="preset-1" type="button" aria-pressed="true">1</button><button id="preset-2" type="button" aria-pressed="false">2</button><button id="preset-3" type="button" aria-pressed="false">3</button><button id="preset-4" type="button" aria-pressed="false">4</button></div><div class="preset-footer"><span class="mini">Presets · estéreo + sub</span><button id="preset-save" disabled>Salvar preset</button><button id="preset-reset" class="secondary" disabled>Reset</button></div></section>
+<section class="pregain-panel" aria-label="Volume de pré-ganho">
+ <div class="pregain-head"><label for="pregain-slider">Volume · pré-ganho</label><output id="pregain-value" for="pregain-slider">0,0 dB</output></div>
+ <input id="pregain-slider" type="range" min="0" max="1000" step="1" value="667" aria-label="Volume de pré-ganho" disabled>
+ <div class="pregain-endpoints"><span>Corte</span><span>+3 dB</span></div><input id="pregain" type="hidden" value="0">
+</section>
+<div class="chart-context">
+ <div class="chart-top"><h2 id="chart-title">Resposta · Subwoofer</h2></div>
+ <div class="chart-options"><label><input id="individual" type="checkbox" checked>Filtros</label><label><input id="compare" type="checkbox">Comparar saídas</label></div>
+ <p class="chart-note">Curva teórica deste EQ · 48 kHz. Não inclui os outros blocos nem a resposta acústica.</p>
+</div>
+<section class="chart-panel" aria-label="Gráfico de resposta em frequência">
+ <canvas id="response" role="img" aria-label="Resposta teórica do equalizador em decibéis por frequência"></canvas>
+</section>
+<div class="legend"><span><i class="dot" style="background:var(--accent)"></i>Soma dos filtros + pré-ganho</span><span><i class="dot" style="background:#879bb8"></i>Filtros individuais</span><span id="compare-legend" hidden>┄ Outra saída</span></div>
+<div id="selection">Toque em um ponto para selecionar o filtro.</div>
+
+<form id="editor"><div id="bands"></div></form>
+<p class="mini">A música segue no Bluetooth do celular. A rede Wi-Fi serve para os ajustes.</p>
+<script src="/eq-response.js"></script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id),types=['Peak','Low shelf','High shelf','Passa-baixas','Passa-altas','Passa-faixa','Notch'];
+const outputs={sub:{label:'Subwoofer',module:'Rec Pre EQ · aba 4',color:'#fbbf72',words:null,draft:null,dirty:false},stereo:{label:'Estéreo · L + R',module:'Music Pre EQ · aba 2',color:'#75e0ba',words:null,draft:null,dirty:false}};
+const ACP_PRESET_1={"sub":[1,0,5,1,4,26,614,1280,0,3,80,724,0,1,1,140,1024,2816,1,2,400,724,64000,1,2,2500,314,1024,1,0,35,2048,640,0,0,24,0,0,0,0,24,0,0,0,0,24,0,0,0,0,32,1024,768],"stereo":[0,0,3,1,1,60,724,1280,1,0,758,512,1280,0,0,5000,724,0,0,0,10000,724,0,0,0,24,0,0,0,0,24,0,0,0,0,24,0,0,0,0,24,0,0,0,0,24,0,0,1,0,13000,205,1280]};
+const colors=['#fb7185','#a78bfa','#38bdf8','#34d399','#fbbf24','#fb923c','#e879f9','#60a5fa','#a3e635','#94a3b8'];
+let presetSlot=1;
+let sendTimer=null,sending=null,initialized=false,uiFailure=null,syncFailure=null;
+const pending=new Map();
+let revision=0;
+let volumeInput=false;
+const rightParams=Array(10).fill(null);
+const displayedQ=Array(10).fill(null);
+let active='sub',original=null,dirty=false,busy=false,selected=5,demo=false,markers=[];
+const signed=w=>w>32767?w-65536:w,word=n=>n&65535;
+const typeShort=['PK','LS','HS','LP','HP','BP','N'];
+const iconPaths=['M2 12H10L16 4L22 12H30','M2 5H11L21 12H30','M2 12H11L21 5H30','M2 5H12L23 15H30','M2 15H9L20 5H30','M2 15H7L13 5H19L25 15H30','M2 5H9L16 15L23 5H30'];
+function filterIcon(type){return `<svg viewBox="0 0 32 20" aria-hidden="true"><path d="${iconPaths[type]}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
+function closeTypeMenus(){for(let i=0;i<10;i++){$('type-menu'+i).hidden=true;$('type-trigger'+i).setAttribute('aria-expanded','false');}}
+function chooseType(i,n){$('type'+i).value=n;closeTypeMenus();selectBand(i);markEdited();}
+for(let i=0;i<10;i++){
+ const f=document.createElement('fieldset');f.id='band'+i;f.className='band';f.disabled=true;
+ f.innerHTML=`<legend><label class="check"><input id="en${i}" type="checkbox" aria-label="Ativar Filtro ${i+1}"><span style="color:${colors[i]}">●</span> Filtro ${i+1}</label></legend><div class="band-body" id="band-body${i}" hidden><div class="filter-grid"><div class="filter-type"><span class="filter-type-label">Tipo</span><select hidden id="type${i}">${types.map((t,n)=>`<option value="${n}">${t}</option>`).join('')}</select><button type="button" class="type-trigger" id="type-trigger${i}" aria-label="Tipo do filtro ${i+1}" aria-haspopup="listbox" aria-expanded="false">${filterIcon(0)}<small>PK</small><span class="chevron">▾</span></button><div id="type-menu${i}" class="type-menu" role="listbox" aria-label="Tipo do filtro ${i+1}" hidden>${types.map((t,n)=>`<button type="button" role="option" id="type-option${i}-${n}" aria-selected="false">${filterIcon(n)}${t}</button>`).join('')}</div></div><label>Hz<input id="freq${i}" type="number" min="24" max="20000" step="1" required></label><label>Ganho · dB<input id="gain${i}" class="parameter-input" type="number" min="-24" max="12" step="any" inputmode="decimal" readonly required aria-label="Ganho do filtro ${i+1}" title="Toque para selecionar; toque duas vezes para digitar"></label><label>Q<input id="q${i}" class="parameter-input q-control" type="number" min="0.001" max="10" step="any" inputmode="decimal" readonly required aria-label="Q do filtro ${i+1}" title="Toque para selecionar; toque duas vezes para digitar"></label></div><div class="sliders"><label>Frequência<input aria-label="Frequência do filtro ${i+1}" id="freq-slider${i}" type="range" min="0" max="1000" step="1"></label><label><span id="param-caption${i}" class="parameter-caption">Ganho</span><input class="parameter-range" aria-label="Ganho do filtro ${i+1}" id="gain-slider${i}" type="range" min="-24" max="12" step="0.1"></label></div></div>`;
+ $('bands').append(f);
+ $('type-trigger'+i).onclick=()=>{const opening=$('type-menu'+i).hidden;closeTypeMenus();$('type-menu'+i).hidden=!opening;$('type-trigger'+i).setAttribute('aria-expanded',String(opening));};
+ $('type-trigger'+i).onkeydown=e=>{if(e.key==='Escape')closeTypeMenus();};
+ for(let n=0;n<7;n++)$('type-option'+i+'-'+n).onclick=()=>chooseType(i,n);
+ $('en'+i).onchange=()=>{if(!$('en'+i).checked)rightParams[i]=null;if($('en'+i).checked){if(Number($('freq'+i).value)<24)$('freq'+i).value=1000;if(Number($('q'+i).value)<.001)$('q'+i).value=724/1024;}selectBand(i);markEdited();};
+ $('freq-slider'+i).oninput=()=>{$('freq'+i).value=Math.round(24*(20000/24)**(Number($('freq-slider'+i).value)/1000));};
+ $('gain-slider'+i).oninput=()=>{if(!rightParams[i])return;if(rightParams[i]==='q'){$('q'+i).value=qSliderValue(Number($('gain-slider'+i).value));displayedQ[i]=null;}else $('gain'+i).value=$('gain-slider'+i).value;};
+ for(const param of ['gain','q'])bindParameter(i,param);
+}
+function qSliderPosition(q){return Math.max(0,Math.min(1000,1000*Math.log(Math.max(.001,q)/.001)/Math.log(10000)));}
+function qSliderValue(p){return Number((.001*10000**(p/1000)).toFixed(3));}
+function selectParameter(i,param){rightParams.fill(null);rightParams[i]=param;selectBand(i);syncSliders();}
+function bindParameter(i,param){
+ const input=$(param+i);input.readOnly=true;let lastTap=null,before='';
+ function edit(){if(document.activeElement===input)input.blur();before=input.value;input.readOnly=false;input.focus();input.select();}
+ input.onpointercancel=()=>{lastTap=null;};
+ input.onclick=e=>{selectParameter(i,param);if(!input.readOnly)return;if(lastTap!==null&&e.timeStamp-lastTap<=400){lastTap=null;e.preventDefault();edit();}else lastTap=e.timeStamp;};
+ input.ondblclick=e=>{e.preventDefault();if(input.readOnly)edit();};
+ input.oncontextmenu=e=>{if(input.readOnly)e.preventDefault();};
+ input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();if(input.readOnly)edit();else input.blur();}if(e.key==='Escape'){input.value=before;input.blur();markEdited();}};
+ input.oninput=()=>{if(param==='q')displayedQ[i]=null;};
+ input.onblur=()=>{lastTap=null;if(param==='q'&&input.value!==''&&Number.isFinite(Number(input.value))){const rounded=String(Number(Number(input.value).toFixed(3)));if(String(input.value)!==rounded){input.value=rounded;displayedQ[i]=null;markEdited();}}input.readOnly=true;};
+}
+function renderSync(){
+ const invalid=Object.values(outputs).some(o=>o.invalid);
+ const waiting=!initialized||busy||!!sending||pending.size>0||Object.values(outputs).some(o=>o.dirty);
+ const state=uiFailure||invalid?'error':waiting?'pending':'synced';
+ const caption=uiFailure|| (invalid?'Revise o valor do filtro.':waiting?(syncFailure||'Sincronizando ajustes…'):'Sincronizado');
+ const paths={synced:'<path d="m5 12 4 4 10-10"/>',pending:'<path d="M20 8a8 8 0 0 0-14-3L3 8m0-5v5h5M4 16a8 8 0 0 0 14 3l3-3m0 5v-5h-5"/>',error:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 3v1"/>'};
+ $('sync-status').setAttribute('data-state',state);$('sync-status').setAttribute('aria-label',caption);$('sync-status').title=caption;
+ $('sync-status').innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+paths[state]+'</svg>';
+}
+function status(text){$('status').textContent=text;renderSync();}
+$('sync-status').onclick=()=>{$('status').hidden=!$('status').hidden;};
+function controls(){
+ $('enabled').disabled=busy||!original;$('pregain-slider').disabled=busy||!original;
+ for(let slot=1;slot<=4;slot++){$('preset-'+slot).disabled=busy||!outputs.sub.words||!outputs.stereo.words;$('preset-'+slot).setAttribute('aria-pressed',String(slot===presetSlot));}for(const id of ['preset-save','preset-reset'])$(id).disabled=busy||!outputs.sub.words||!outputs.stereo.words;
+
+ for(const k of Object.keys(outputs))$('tab-'+k).disabled=busy;
+ document.querySelectorAll('fieldset').forEach(f=>f.disabled=busy||!original);
+ renderSync();
+}
+function syncSliders(){syncPregain();for(let i=0;i<10;i++){
+ $('freq-slider'+i).value=Math.max(0,Math.min(1000,1000*Math.log(Math.max(24,Number($('freq'+i).value))/24)/Math.log(20000/24)));
+ const gainUsed=Number($('type'+i).value)<=2,param=rightParams[i],slider=$('gain-slider'+i);
+ slider.min=param==='q'?0:-24;slider.max=param==='q'?1000:12;slider.step=param==='q'?1:0.1;
+ slider.value=param==='q'?qSliderPosition(Number($('q'+i).value)):Number($('gain'+i).value);
+ slider.disabled=busy||!original||!param||(param==='gain'&&!gainUsed);
+ slider.setAttribute('data-param',param||'none');slider.setAttribute('aria-label',(param==='q'?'Q':param==='gain'?'Ganho':'Toque em Ganho ou Q')+' do filtro '+(i+1));
+ $('param-caption'+i).textContent=param==='q'?'Q · log':param==='gain'?'Ganho':'Toque em Ganho ou Q';$('param-caption'+i).setAttribute('data-param',param||'none');
+ for(const name of ['gain','q'])$(name+i).setAttribute('data-active',String(param===name));
+ $('gain'+i).title=gainUsed?'Toque para selecionar; toque duas vezes para digitar':'Ganho não usado neste tipo de filtro. Toque em Q para ajustá-lo.';
+ const type=Number($('type'+i).value);$('type-trigger'+i).innerHTML=filterIcon(type)+`<small>${typeShort[type]}</small><span class="chevron">▾</span>`;
+ $('type-trigger'+i).setAttribute('aria-label','Tipo do filtro '+(i+1)+': '+types[type]);
+ for(let n=0;n<7;n++)$('type-option'+i+'-'+n).setAttribute('aria-selected',String(type===n));
+ $('band-body'+i).hidden=!$('en'+i).checked;$('band'+i).classList.toggle('collapsed',!$('en'+i).checked);
+ if(!$('en'+i).checked){$('type-menu'+i).hidden=true;$('type-trigger'+i).setAttribute('aria-expanded','false');}
+}}
+function pregainRawDb(p){return p<=667?-60*((667-p)/666)**2:3*((p-667)/333)**1.5;}
+function pregainSliderDb(p){if(p===0)return -128;const db=pregainRawDb(p);return db>=-0.3&&db<=0.2?0:Math.round(db*256)/256;}
+function pregainPosition(db){return db<=-128?0:db<=0?Math.max(1,667-666*Math.sqrt(-db/60)):Math.min(1000,667+333*(db/3)**(2/3));}
+function syncPregain(){
+ const db=Number($('pregain').value);
+ if(!volumeInput)$('pregain-slider').value=pregainPosition(db);
+ $('pregain-value').textContent=db<=-128?'Corte':(db>0?'+':'')+db.toFixed(1).replace('.',',')+' dB';
+ $('pregain-slider').setAttribute('aria-valuetext',$('pregain-value').textContent);
+}
+function markEdited(){if(!original)return;dirty=true;outputs[active].dirty=true;outputs[active].draft=collect(false);controls();syncSliders();draw();scheduleEdit();}
+function normalizeFrequencies(w){const copy=w.slice();for(let i=0;i<10;i++)copy[5+5*i]=Math.max(24,copy[5+5*i]);return copy;}
+function showWords(w){
+ $('enabled').checked=!!w[0];$('pregain').value=signed(w[1])/256;
+ for(let i=0;i<10;i++){let k=3+5*i;$('en'+i).checked=!!w[k];$('type'+i).value=w[k+1];$('freq'+i).value=w[k+2];$('q'+i).value=String(Number((w[k+3]/1024).toFixed(3)));displayedQ[i]={raw:w[k+3],text:String($('q'+i).value)};$('gain'+i).value=signed(w[k+4])/256;}
+ syncSliders();
+}
+function populate(w){
+ if(!Array.isArray(w)||w.length!==53||w.some(n=>!Number.isInteger(n)||n<0||n>65535))throw Error('Resposta de EQ inválida.');
+ w=normalizeFrequencies(w);
+ original=w.slice();outputs[active].words=w.slice();outputs[active].draft=w.slice();outputs[active].dirty=false;dirty=false;
+ showWords(w);controls();draw();
+}
+function collect(validate=true){
+ if(validate&&!$('editor').reportValidity())throw Error('Revise os valores dos filtros.');
+ const w=original.slice();w[0]=+$('enabled').checked;w[1]=word(Math.round(Number($('pregain').value)*256));
+ for(let i=0;i<10;i++){
+  let k=3+i*5,en=$('en'+i).checked,f=Number($('freq'+i).value),q=Number($('q'+i).value);
+  if(validate&&['freq','gain','q'].some(name=>$(name+i).value===''))throw Error('Conclua os valores do filtro '+(i+1)+'.');
+  if(validate&&en&&(f<24||q<.001||q>10))throw Error(`Filtro ${i+1}: use frequência ≥ 24 Hz e Q entre 0,001 e 10.`);
+  w[k]=+en;w[k+1]=Number($('type'+i).value);w[k+2]=f;w[k+3]=displayedQ[i]&&String($('q'+i).value)===displayedQ[i].text?displayedQ[i].raw:Math.round(q*1024);w[k+4]=word(Math.round(Number($('gain'+i).value)*256));
+ }if(validate&&!validPresetWords(w))throw Error('Revise os valores dos filtros e do pré-ganho.');return w;
+}
+function selectBand(i){selected=i;document.querySelectorAll('.band').forEach((el,n)=>el.classList.toggle('selected',n===i));draw();}
+function draw(){
+ const canvas=$('response'),ctx=canvas.getContext('2d');if(!ctx)return;
+ const width=canvas.getBoundingClientRect().width;if(width<1)return;
+ const height=canvas.getBoundingClientRect().height,dpr=window.devicePixelRatio||1;
+ canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+ const L=40,R=12,T=15,B=28,W=width-L-R,H=height-T-B,min=-12,max=12;
+ const x=f=>L+Math.log(f/10)/Math.log(2000)*W,y=db=>T+(max-Math.max(min,Math.min(max,db)))/(max-min)*H;
+ ctx.font='10px system-ui';ctx.textBaseline='middle';
+ for(let db=min;db<=max;db+=3){ctx.strokeStyle=db===0?'#52647d':'#26344a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(L,y(db));ctx.lineTo(width-R,y(db));ctx.stroke();ctx.fillStyle='#91a3bf';ctx.textAlign='right';ctx.fillText((db>0?'+':'')+db,L-7,y(db));}
+ const ticks=width<500?[10,50,200,1000,5000,20000]:[10,20,50,100,200,500,1000,2000,5000,10000,20000];
+ for(const f of ticks){ctx.strokeStyle='#26344a';ctx.beginPath();ctx.moveTo(x(f),T);ctx.lineTo(x(f),height-B);ctx.stroke();ctx.fillStyle='#91a3bf';ctx.textAlign=f===10?'left':f===20000?'right':'center';ctx.fillText(f>=1000?f/1000+'k':String(f),x(f),height-B+14);}
+ ctx.fillStyle='#91a3bf';ctx.textAlign='left';ctx.fillText('dB',0,5);
+ markers=[];if(!original)return;
+ const w=collect(false),fs=48000,o=outputs[active];
+ function line(fn,color,thickness,dashed=false){ctx.strokeStyle=color;ctx.lineWidth=thickness;ctx.setLineDash(dashed?[5,5]:[]);ctx.beginPath();for(let i=0;i<=300;i++){const f=10*2000**(i/300),xx=x(f),yy=y(fn(f));if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);}ctx.stroke();ctx.setLineDash([]);}
+ if($('individual').checked&&w[0])for(let i=0;i<10;i++)if(w[3+5*i])line(f=>EqResponse.band(w,i,f,fs),colors[i]+(selected===i?'ee':'77'),selected===i?2:1);
+ const other=outputs[active==='sub'?'stereo':'sub'];
+ if($('compare').checked&&other.draft)line(f=>EqResponse.total(other.draft,f,fs),other.color,1.8,true);
+ $('compare-legend').hidden=!$('compare').checked;
+ line(f=>EqResponse.total(w,f,fs),o.color,2.8);
+ if(w[0])for(let i=0;i<10;i++){const k=3+i*5;if(!w[k]||w[k+2]<24)continue;const mx=x(w[k+2]),my=y(EqResponse.total(w,w[k+2],fs));markers.push({i,x:mx,y:my});ctx.fillStyle=colors[i];ctx.strokeStyle='#10192a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(mx,my,selected===i?8:6,0,2*Math.PI);ctx.fill();ctx.stroke();ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(String(i+1),mx,my-15);}
+ const k=3+5*selected;$('selection').textContent=`Filtro ${selected+1} · ${types[w[k+1]]} · ${w[k+2]} Hz · Q ${Number((w[k+3]/1024).toFixed(3))} · ${(signed(w[k+4])/256).toFixed(2)} dB${w[k]?'':' · desativado'}`;
+}
+async function api(path,data){if(demo&&path.startsWith('/api/preset'))return demoPreset(path,data);const res=await fetch(path,{cache:'no-store',...(data===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-BLDSP':'1'},body:JSON.stringify(data)})});const j=await res.json();if(!res.ok)throw Error(j.error||'Falha de comunicação');return j;}
+async function run(fn){busy=true;uiFailure=null;controls();try{await fn();}catch(e){uiFailure=e.message;status('Não concluído: '+e.message);}finally{busy=false;controls();syncSliders();}}
+async function switchOutput(key){
+ if(busy||key===active)return;
+ if(original)outputs[active].draft=collect(false);
+ rightParams.fill(null);active=key;const o=outputs[key];original=o.words?o.words.slice():null;dirty=o.dirty;
+ document.documentElement.style.setProperty('--accent',o.color);
+ for(const k of Object.keys(outputs))$('tab-'+k).setAttribute('aria-selected',String(k===key));
+ $('chart-title').textContent='Resposta · '+o.label;
+ selected=key==='sub'?5:0;
+ if(original){showWords(o.draft);status(o.dirty?'Atualizando esta saída…':'Configuração carregada nesta saída.');controls();selectBand(selected);}
+ else status('Aguardando configuração do preset.');
+}
+for(const k of Object.keys(outputs))$('tab-'+k).onclick=()=>switchOutput(k);
+$('editor').addEventListener('input',markEdited);
+$('enabled').onchange=markEdited;
+$('pregain-slider').oninput=()=>{const p=Number($('pregain-slider').value);$('pregain').value=pregainSliderDb(p);volumeInput=true;try{markEdited();}finally{volumeInput=false;}};
+for(const id of ['individual','compare'])$(id).onchange=draw;
+$('response').onclick=e=>{const r=$('response').getBoundingClientRect(),xx=e.clientX-r.left,yy=e.clientY-r.top;const nearest=markers.slice().sort((a,b)=>Math.hypot(a.x-xx,a.y-yy)-Math.hypot(b.x-xx,b.y-yy))[0];if(nearest&&Math.hypot(nearest.x-xx,nearest.y-yy)<30)selectBand(nearest.i);};
+
+function validPresetWords(w){
+ if(!Array.isArray(w)||w.length!==53||w.some(n=>!Number.isInteger(n)||n<0||n>65535)||w[0]>1||signed(w[1])>768)return false;
+ for(let i=0;i<10;i++){const k=3+5*i;if(w[k]>1||w[k+1]>6||w[k+2]<24||w[k+2]>20000||w[k+3]>10240||signed(w[k+4])< -6144||signed(w[k+4])>3072||(w[k]&&(w[k+2]<24||w[k+3]<1)))return false;}return true;
+}
+function flatWords(){const w=Array(53).fill(0);w[0]=1;for(let i=0;i<10;i++){w[5+i*5]=1000;w[6+i*5]=724;}return w;}
+function seedDemoPreset(){
+ const marker='bldsp-acp-seed-v1';
+ if(localStorage.getItem(marker)!=='1'){
+  localStorage.setItem('bldsp-preset-v1-1',JSON.stringify(ACP_PRESET_1));
+  localStorage.setItem(marker,'1');
+ }
+}
+function demoPreset(path,data){
+ seedDemoPreset();
+ const slot=Number(new URL(path,'http://preview').searchParams.get('slot')),key='bldsp-preset-v1-'+slot;
+ if(!Number.isInteger(slot)||slot<1||slot>4)throw Error('Preset inválido.');
+ if(data?.action==='save'){localStorage.setItem(key,JSON.stringify({sub:data.sub,stereo:data.stereo}));return {saved:true,demo:true};}
+ if(data?.action==='reset'){localStorage.removeItem(key);return {saved:false,sub:flatWords(),stereo:flatWords(),demo:true};}
+ const saved=localStorage.getItem(key);return saved?{...JSON.parse(saved),saved:true,demo:true}:{saved:false,sub:flatWords(),stereo:flatWords(),demo:true};
+}
+function presetDraft(j){
+ rightParams.fill(null);
+ for(const key of ['sub','stereo']){const w=normalizeFrequencies(j[key]);j[key]=w;if(!validPresetWords(w))throw Error('Preset inválido.');}
+ for(const key of ['sub','stereo']){outputs[key].draft=j[key].slice();outputs[key].dirty=true;}
+ dirty=true;showWords(outputs[active].draft);controls();selectBand(selected);draw();
+}
+function selectPreset(next){
+ if(busy)return;
+ return run(async()=>{const j=await api('/api/preset?slot='+next);presetDraft(j);presetSlot=next;queueBoth();controls();status('Preset '+next+(j.saved?' carregado.':' vazio: ajustes planos carregados.')+' Aplicação automática nas duas saídas.');});
+}
+for(let slot=1;slot<=4;slot++)$('preset-'+slot).onclick=()=>selectPreset(slot);
+$('preset-save').onclick=()=>run(async()=>{
+ if(original)outputs[active].draft=collect();
+ const data={action:'save',sub:outputs.sub.draft,stereo:outputs.stereo.draft};
+ for(const key of ['sub','stereo'])if(!validPresetWords(data[key]))throw Error('Revise os valores de '+outputs[key].label+'.');
+ await api('/api/preset?slot='+presetSlot,data);
+ status('Preset '+presetSlot+' salvo. Inclui as duas saídas.');
+});
+$('preset-reset').onclick=()=>{if(!confirm('Resetar o preset '+presetSlot+' para filtros planos e pré-ganho em 0 dB?'))return;return run(async()=>{const j=await api('/api/preset?slot='+presetSlot,{action:'reset'});presetDraft(j);queueBoth();status('Preset '+presetSlot+' resetado. Ajustes planos aplicados automaticamente.');});};
+
+
+function queueOutput(key,words){
+ const o=outputs[key];o.invalid=false;o.rev=++revision;o.dirty=true;uiFailure=null;
+ pending.set(key,{words:words.slice(),rev:o.rev});renderSync();
+ if(!sendTimer&&!sending)sendTimer=setTimeout(()=>{sendTimer=null;flushOutputs();},180);
+}
+function scheduleEdit(){
+ const key=active;
+ // Empty/incomplete numeric input must not temporarily become a zero command.
+ for(let i=0;i<10;i++)if($('en'+i).checked)for(const name of ['freq','gain','q'])if($(name+i).value===''||!Number.isFinite(Number($(name+i).value))){pending.delete(key);outputs[key].invalid=true;outputs[key].rev=++revision;status('Conclua o valor para aplicar.');return;}
+ const words=collect(false);
+ if(!validPresetWords(words)){pending.delete(key);outputs[key].invalid=true;outputs[key].rev=++revision;status('Revise os valores: frequência mínima 24 Hz e Q entre 0,001 e 10.');return;}
+ queueOutput(key,words);
+}
+function queueBoth(){for(const key of ['stereo','sub'])queueOutput(key,outputs[key].draft);}
+function flushOutputs(){
+ if(sending)return sending;
+ if(sendTimer){clearTimeout(sendTimer);sendTimer=null;}
+ sending=(async()=>{
+  while(pending.size){
+   const [key,job]=pending.entries().next().value;pending.delete(key);
+   try{
+    const j=await api('/api/eq?output='+key,{words:job.words});
+    if(!j.matches)throw Error('A placa retornou valores diferentes.');
+    syncFailure=null;const o=outputs[key];o.words=normalizeFrequencies(j.words);
+    if(o.rev===job.rev){o.dirty=false;o.draft[2]=o.words[2];if(active===key){original=o.words.slice();dirty=false;}}
+    if(o.rev===job.rev)status('Ajustes atualizados.');
+   }catch(e){
+    const o=outputs[key];if(o.rev===job.rev)pending.set(key,job);
+    syncFailure='Aguardando conexão com o DSP…';status('Aguardando DSP: '+e.message+'. Tentando reconectar…');
+    sendTimer=setTimeout(()=>{sendTimer=null;flushOutputs();},1500);break;
+   }
+  }
+ })().finally(()=>{sending=null;controls();});
+ return sending;
+}
+
+window.addEventListener('click',e=>{if(!e.target.closest('.filter-type'))closeTypeMenus();});
+window.addEventListener('resize',draw);
+controls();draw();
+run(async()=>{
+ const info=await api('/api/status');demo=!!info.demo;if(demo)seedDemoPreset();
+ const j=await api('/api/preset?slot=1');
+ for(const key of ['sub','stereo']){const w=normalizeFrequencies(j[key]);if(!validPresetWords(w))throw Error('Preset 1 inválido.');outputs[key].words=w.slice();outputs[key].draft=w.slice();}
+ populate(outputs[active].draft);initialized=true;presetSlot=1;queueBoth();status('Preset 1 carregado.');
+});
+</script></body></html>
