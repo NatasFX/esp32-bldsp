@@ -1,5 +1,10 @@
 #include "protocol.h"
 #include <string.h>
+size_t dsp_encode_eq_parameter(uint8_t *out,uint8_t module,uint8_t selector,uint16_t value) {
+    if((module!=0x91 && module!=0x93) || selector>=DSP_EQ_WORDS || selector==2)return 0;
+    const uint8_t payload[]={selector,(uint8_t)value,(uint8_t)(value>>8)};
+    return dsp_frame(out,module,payload,sizeof(payload));
+}
 bool dsp_valid_eq_words(const uint16_t w[DSP_EQ_WORDS]) {
     // Signed Q8.8 minimum (-128 dB) represents the UI's bottom attenuation stop.
     if(w[0]>1 || (int16_t)w[1]>3*256)return false;

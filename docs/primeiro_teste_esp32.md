@@ -41,3 +41,13 @@ I (4775) dsp_usb: Preset 1 applied to stereo + sub; no DSP flash save
 ```
 
 Confirmados no ESP físico: descoberta dinâmica da interface HID, descritor de reports de 256 bytes, verificação do perfil e aplicação/leitura de retorno do preset 1 para módulos 91 e 93. A troca 171E → 1719 ocorreu neste boot; sua causa não foi determinada. Não inferir continuidade de Bluetooth a partir do PID. Permanecem pendentes confirmação auditiva/roteamento das saídas pelo usuário, testes do front via AP, persistência e reconexão prolongada.
+
+## Correção de pré-ganho e diagnóstico
+
+Relato: troca de presets altera áudio; pré-ganho na aba Subwoofer com EQ ativo termina com check, mas sem efeito audível. Check confirma leitura de parâmetros, não mede áudio.
+
+No SDK relacionado (`audio/communication.c`, Communication EQ), o seletor FF copia pregain e chama apenas AudioEffectEQFilterConfig; o seletor 01 chama AudioEffectEQPregainConfig quando o valor muda. O caminho FF também copia pregain por variável sem sinal. Isso oferece uma explicação consistente para memória atualizada e ganho de áudio desatualizado; não prova identidade do firmware instalado com esse SDK.
+
+Correção: após o bloco completo, enviar seletor 01 com vizinho de um passo Q8.8 e depois o alvo. O passo intermediário é −1/256 dB relativo ao alvo; no mínimo −128 dB usa +1/256 dB para não ultrapassar a faixa. Isso força reconfiguração mesmo quando a palavra lida já coincide com o alvo. Bloco inteiro, atualização individual e consulta permanecem na mesma tarefa USB, serializados. O formato escalar foi conferido contra a captura ACP −0,10 dB (`A5 5A 93 03 01 E6 FF 16`).
+
+Logs novos: abertura da página, POST/URI/tamanho, módulo/enable/pré-ganho solicitados, TX USB, atualização de ganho em tempo real enviada, RX e confirmação/matches/duração ou erro USB. Nenhuma senha nos logs. Necessária confirmação auditiva após gravação; retorno de parâmetros não comprova atualização sonora.

@@ -37,9 +37,11 @@ static esp_err_t error(httpd_req_t *r,const char *status,const char *message) {
     char *s=cJSON_PrintUnformatted(o);httpd_resp_sendstr(r,s);free(s);cJSON_Delete(o);return ESP_OK;
 }
 static esp_err_t usb_error(httpd_req_t *r,esp_err_t err) {
+    ESP_LOGW("http_eq","USB failed uri=%s error=%s",r->uri,esp_err_to_name(err));
     return error(r,"503 Service Unavailable",esp_err_to_name(err));
 }
 static esp_err_t root(httpd_req_t *r) {
+    ESP_LOGI("http_eq","UI requested");
     httpd_resp_set_type(r,"text/html; charset=utf-8");
     return httpd_resp_send(r,(const char*)html_start,html_end-html_start-1);
 }
@@ -61,6 +63,8 @@ static bool valid_words(const uint16_t *w) {
     return dsp_valid_eq_words(w);
 }
 static esp_err_t apply_eq(httpd_req_t *r) {
+    int64_t started=esp_timer_get_time();
+    ESP_LOGI("http_eq","POST %s bytes=%d",r->uri,(int)r->content_len);
     uint8_t module=output_module(r);
     if(!module)return error(r,"400 Bad Request","Saída inválida");
     if(r->content_len<1 || r->content_len>1024)return error(r,"400 Bad Request","Corpo inválido");
@@ -78,7 +82,8 @@ static esp_err_t apply_eq(httpd_req_t *r) {
         if(valid)w[i]=(uint16_t)v->valuedouble;
     }
     cJSON_Delete(o);
-    if(!valid || !valid_words(w))return error(r,"400 Bad Request","Valores de EQ inválidos");
+    if(!valid || !valid_words(w)){ESP_LOGW("http_eq","Invalid EQ payload module=%02x",module);return error(r,"400 Bad Request","Valores de EQ inválidos");}
+    ESP_LOGI("http_eq","Requested module=%02x enabled=%u pregain=%.3f dB",module,w[0],(double)(int16_t)w[1]/256);
     // Preserve the third word from a fresh read: its installed-firmware semantics
     // remain uncertain. Do not let a browser alter it.
     esp_err_t err=dsp_read_eq(module,actual);if(err!=ESP_OK)return usb_error(r,err);
@@ -86,6 +91,7 @@ static esp_err_t apply_eq(httpd_req_t *r) {
     err=dsp_apply_eq(module,w,actual);if(err!=ESP_OK)return usb_error(r,err);
     bool matches=true;
     for(int i=0;i<53;i++)if(i!=2 && actual[i]!=w[i])matches=false;
+    ESP_LOGI("http_eq","Confirmed module=%02x matches=%d pregain=%.3f dB duration=%ld ms",module,matches,(double)(int16_t)actual[1]/256,(long)((esp_timer_get_time()-started)/1000));
     return reply_eq(r,actual,matches);
 }
 static esp_err_t status(httpd_req_t *r) {

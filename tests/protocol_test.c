@@ -41,6 +41,14 @@ int main(void) {
     assert(dsp_valid_eq_words(acp_preset_sub));
     assert(dsp_valid_eq_words(acp_preset_stereo));
     assert(acp_preset_sub[30]==35 && acp_preset_sub[31]==2048 && acp_preset_sub[32]==640);
+    const uint8_t captured_pregain[]={0xa5,0x5a,0x93,3,1,0xe6,0xff,0x16};
+    assert(dsp_encode_eq_parameter(frame,0x93,1,(uint16_t)-26)==sizeof(captured_pregain));
+    assert(!memcmp(frame,captured_pregain,sizeof(captured_pregain)));
+    for(size_t i=sizeof(captured_pregain);i<sizeof(frame);i++)assert(frame[i]==0);
+    assert(dsp_encode_eq_parameter(frame,0x91,1,0)==8 && frame[2]==0x91);
+    assert(!dsp_encode_eq_parameter(frame,0x98,1,0));
+    assert(!dsp_encode_eq_parameter(frame,0x93,2,0));
+    assert(!dsp_encode_eq_parameter(frame,0x93,53,0));
     puts("Protocol: captured EQ round-trip, truncation, malformed frames, pregain and bounds OK");
     return 0;
 }

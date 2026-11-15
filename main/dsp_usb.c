@@ -160,12 +160,28 @@ static esp_err_t execute(request_t *r) {
     esp_err_t err;uint8_t frame[256];
     if(!profile_ok && (err=check_profile())!=ESP_OK)return err;
     if(r->op==1) {
+        uint16_t pregain=r->words[1];
+        ESP_LOGI(TAG,"EQ TX module=%02x enabled=%u pregain=%.3f dB",r->module,r->words[0],(double)(int16_t)pregain/256);
         if(!dsp_encode_eq_module(frame,r->module,r->words))return ESP_ERR_INVALID_ARG;
         err=send_frame(frame);if(err!=ESP_OK)return err;
         vTaskDelay(pdMS_TO_TICKS(50));
+        // Related SDK's bulk handler stores pregain but only reconfigures filters.
+        // Its scalar handler reconfigures gain only when the value changes.
+        // Force that handler through a one-Q8.8-step neighbour, then the target.
+        // This also repairs stale runtime gain when readback already equals target.
+        uint16_t neighbour=pregain==0x8000?0x8001:(uint16_t)(pregain-1);
+        dsp_encode_eq_parameter(frame,r->module,1,neighbour);
+        err=send_frame(frame);if(err!=ESP_OK)return err;
+        vTaskDelay(pdMS_TO_TICKS(10));
+        dsp_encode_eq_parameter(frame,r->module,1,pregain);
+        err=send_frame(frame);if(err!=ESP_OK)return err;
+        vTaskDelay(pdMS_TO_TICKS(50));
+        ESP_LOGI(TAG,"EQ pregain live update sent module=%02x",r->module);
     }
     err=query(r->module,frame);if(err!=ESP_OK)return err;
-    return dsp_decode_eq_module(frame,256,r->module,r->words)?ESP_OK:ESP_ERR_INVALID_RESPONSE;
+    if(!dsp_decode_eq_module(frame,256,r->module,r->words))return ESP_ERR_INVALID_RESPONSE;
+    ESP_LOGI(TAG,"EQ RX module=%02x enabled=%u pregain=%.3f dB",r->module,r->words[0],(double)(int16_t)r->words[1]/256);
+    return ESP_OK;
 }
 static bool apply_boot_preset(void) {
     uint16_t sub[53],stereo[53];
