@@ -23,5 +23,10 @@ int main(void){
     assert(!monitor_log_event_at(&log_data,MONITOR_EVENT_CAPACITY));
     assert(!strcmp(monitor_event_name(MONITOR_CLIP_ON),"clip_on"));
     assert(!strcmp(monitor_event_name((monitor_event_code_t)999),"unknown"));
+    for(unsigned i=0;i<MONITOR_RAW_CAPACITY+12;i++)monitor_log_raw(&log_data,i*20,i==20?-1:(int)i);
+    assert(log_data.raw_count==MONITOR_RAW_CAPACITY);
+    for(size_t i=0;i<log_data.raw_count;i++)assert(monitor_log_raw_at(&log_data,i)->at_ms==(i+12)*20);
+    assert(monitor_log_raw_at(&log_data,8)->raw==-1);
+    assert(!monitor_log_raw_at(&log_data,MONITOR_RAW_CAPACITY));
     puts("Monitoring log: bounded RAM, chronological wraparound, gaps and independent event window OK");return 0;
 }

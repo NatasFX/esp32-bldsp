@@ -41,6 +41,8 @@ class Handler(BaseHTTPRequestHandler):
                         'automatic_protection': False})
         elif route == '/api/telemetry/history':
             self.reply({'uptime_ms': 0, 'samples': [], 'events': [], 'storage': 'ram'})
+        elif route == '/api/telemetry/ldr/capture':
+            self.reply({'uptime_ms': 0, 'samples': [], 'window_ms': 2000, 'sample_interval_ms': 20})
         elif route == '/api/eq':
             try:
                 output = self.output()

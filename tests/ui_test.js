@@ -14,6 +14,8 @@ const context=vm.createContext({URL,document,window:{addEventListener(){}},conso
   if(url==='/api/source/pulse')return {ok:true,json:async()=>({accepted:true,pulse_ms:100,demo:true})};
   if(url==='/api/telemetry')return {ok:true,json:async()=>({temperature:{status:'unavailable',celsius:null},clip:{status:'uncalibrated',active:null}})};
   if(url==='/api/telemetry/history')return {ok:true,json:async()=>({uptime_ms:300000,samples:[{at_ms:298000,temperature_c:20},{at_ms:299000,temperature_c:null},{at_ms:300000,temperature_c:30}],events:[{at_ms:500,code:'started',detail:0},{at_ms:120000,code:'clip_on',detail:0}]})};
+  if(url==='/api/telemetry/ldr/capture')return {ok:true,json:async()=>({uptime_ms:5000,samples:[{at_ms:3000,raw:2000},{at_ms:4000,raw:300},{at_ms:5000,raw:2100}]})};
+  if(url==='/api/telemetry/ldr'&&opts?.method==='POST')return {ok:true,json:async()=>({temperature:{status:'estimated',celsius:25},clip:{status:'provisional',manual:true,threshold:JSON.parse(opts.body).threshold,raw:2000,active:false}})};
   const key=url.includes('stereo')?'stereo':'sub';
   if(opts?.method==='POST'){
    const words=JSON.parse(opts.body).words.slice();
@@ -75,8 +77,16 @@ function change(id,value){element(id).value=String(value);element('editor').inpu
  assert.equal(element('monitor-temperature').textContent,'—');assert.equal(element('monitor-clip').textContent,'Sem leitura');
  assert.equal(element('monitor-temp-min').textContent,'20,0 °C');assert.equal(element('monitor-temp-avg').textContent,'25,0 °C');assert.equal(element('monitor-temp-max').textContent,'30,0 °C');
  assert.ok(element('monitor-events').textContent.includes('00:02:00 · LED CLIP acendeu'),'events from before page load must appear');
+ assert.equal(posts().length,beforeMonitorPosts);
+ assert.equal(calls.filter(c=>c.url==='/api/telemetry/ldr/capture').length,0,'RAW capture must be manual');
+ element('monitor-limit').value='450';await element('monitor-raw-refresh').onclick();
+ assert.ok(element('monitor-raw-extremes').textContent.includes('Mín: 300 · Máx: 2100'));
+ const frozenRaw=element('monitor-raw-path').d;
+ element('monitor-limit-slider').value='600';element('monitor-limit-slider').oninput();
+ assert.equal(Number(element('monitor-limit').value),600);assert.equal(element('monitor-raw-path').d,frozenRaw,'threshold editing must not refresh samples');
+ await element('monitor-limit-save').onclick();assert.equal(JSON.parse(calls.at(-1).opts.body).threshold,600);
  assert.equal((element('monitor-temp-path').d.match(/M/g)||[]).length,2,'missing samples create a gap');
- assert.equal(posts().length,beforeMonitorPosts);assert.equal(run('JSON.stringify(outputs.sub.draft)'),draftBefore);
+ assert.equal(run('JSON.stringify(outputs.sub.draft)'),draftBefore);
  run("renderMonitor({temperature:{status:'estimated',celsius:32.4,resistance_ohm:7200,millivolts:1380},clip:{status:'ok',active:true,count:3}})");
  assert.equal(element('monitor-temperature').textContent,'32,4');assert.equal(element('monitor-clip').textContent,'CLIP detectado');
  run('monitorUnavailable()');assert.equal(element('monitor-temperature').textContent,'—');assert.equal(element('monitor-clip').textContent,'Sem leitura');

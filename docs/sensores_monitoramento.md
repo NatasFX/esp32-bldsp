@@ -19,7 +19,7 @@ GET `/api/telemetry` informa temperatura estimada/resistência/tensão/ADC, CLIP
 
 Na aba Monitoramento, capturar a referência do LED apagado e a do LED aceso. A segunda deve produzir ADC pelo menos 100 pontos abaixo da primeira. Pode usar luz externa controlada para verificar resposta do LDR antes de qualquer teste real de clipping; não provocar clipping forte/prolongado para obter referência. Validar depois o nível com o LED real, em ensaio controlado.
 
-As referências são salvas em NVS somente ao capturar. Detecção usa ponto médio, histerese de 10% da diferença e duas amostras consecutivas para trocar estado. Contador acumula bordas de acendimento desde o boot e não representa duração nem porcentagem de distorção. O painel retém a indicação por 2 s para tornar um pulso visível; sem calibração ou leitura recente não informa “sem CLIP”.
+As referências são salvas em NVS somente ao capturar. Detecção usa ponto médio, histerese de 10% da diferença e duas amostras consecutivas para trocar estado. Contador acumula bordas de acendimento desde o boot e não representa duração nem porcentagem de distorção. O painel retém a indicação por 2 s para tornar um pulso visível; sem leitura recente não informa “sem CLIP”; modo manual provisório por limiar é identificado separadamente da calibração óptica.
 
 ## Sem atuação automática nesta entrega
 
@@ -43,3 +43,13 @@ Eventos: início do monitoramento, CLIP acendendo/apagando, disponibilidade do N
 O gráfico usa eixo Y numérico em °C com limites inferior/superior explícitos, média tracejada e estatísticas mínima/média/máxima das amostras válidas dos últimos 5 minutos. Amostras ausentes não são convertidas em zero nem entram na média. A escala é automática; seus limites não são alarmes térmicos. Reabrir a página, trocar de celular ou alternar abas preserva os dados que já estavam no ESP; desligar/reiniciar o ESP limpa os buffers.
 
 Validação do histórico no dispositivo em 16/11/2026: após build e gravação conferidos, logs de 30,676 s a 45,676 s de uptime mostraram history=30 → 35 → 40 → 45 e events=3, com NTC em 1629–1634 mV. A tarefa de aquisição acumula o buffer local sem depender da página. Testes C verificaram capacidade, sobrescrita e ordem cronológica; teste do front carregou eventos anteriores à abertura, excluiu amostras ausentes da média e preservou lacunas no traçado. Renderização em 390 px conferiu limites e linha média visível sem overflow horizontal. A lista de eventos tem horário relativo ao boot; o buffer continua sendo RAM e não persiste a reset.
+
+## Limiar manual e captura RAW — 16/11/2026
+
+A pedido do usuário, detecção provisória ativa por padrão com RAW < 450. Confirma em duas amostras consecutivas e libera em RAW ≥ 470 (histerese de 20 pontos). A aquisição continua nominalmente a cada 20 ms, média de até quatro conversões por canal; confirmação nominal ~40 ms mais resposta física do LDR. Esses tempos não são garantia de detectar duração exata de um pulso óptico.
+
+Campo numérico e slider permitem alterar o limiar (1–4075). Salvar persiste em NVS e ativa modo manual; o limiar não muda apenas ao arrastar o slider. O gráfico mostra a linha em edição e sinaliza quando não está salva. Capturar as duas referências ópticas válidas muda para o modo calibrado; salvar um limiar volta ao manual. Tudo continua sem atuação sobre o volume.
+
+O gráfico RAW foi separado do histórico térmico: buffer de 128 amostras rápidas na RAM do ESP e GET `/api/telemetry/ldr/capture`, filtrado pelos últimos 2000 ms. Só é consultado ao clicar em Atualizar captura. A imagem permanece congelada, inclusive ao editar o limiar. Escala inferior 0 e superior ajustada ao máximo observado, mantendo o limiar visível; slider acompanha essa escala e o campo numérico permite ampliá-la dentro de 1–4075. Mostra mínimo/máximo capturados e zona abaixo do limiar. Invalidade vira lacuna, não RAW zero.
+
+A retenção visual de CLIP por 2 s continua independente da captura RAW e não representa duração do clipping. O histórico de temperatura permanece 1 Hz/5 minutos, com consulta periódica própria.

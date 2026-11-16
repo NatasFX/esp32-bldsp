@@ -1,4 +1,12 @@
 #include "monitor_log.h"
+void monitor_log_raw(monitor_log_t *log,uint64_t at_ms,int raw){
+    log->raw[log->raw_head]=(monitor_raw_t){at_ms,(int16_t)raw};log->raw_head=(log->raw_head+1)%MONITOR_RAW_CAPACITY;
+    if(log->raw_count<MONITOR_RAW_CAPACITY)log->raw_count++;
+}
+const monitor_raw_t *monitor_log_raw_at(const monitor_log_t *log,size_t index){
+    if(index>=log->raw_count)return NULL;
+    return &log->raw[(log->raw_head+MONITOR_RAW_CAPACITY-log->raw_count+index)%MONITOR_RAW_CAPACITY];
+}
 void monitor_log_sample(monitor_log_t *log,monitor_sample_t sample){
     log->samples[log->sample_head]=sample;log->sample_head=(log->sample_head+1)%MONITOR_SAMPLE_CAPACITY;
     if(log->sample_count<MONITOR_SAMPLE_CAPACITY)log->sample_count++;

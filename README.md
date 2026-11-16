@@ -29,7 +29,7 @@ Evolução planejada: [roadmap de telemetria e proteção](docs/roadmap_telemetr
 
 ## Monitoramento
 
-Aba com NTC no GPIO18 (estimativa 10 kΩ/B3950), LDR no LED CLIP no GPIO17, histórico e eventos guardados na RAM do ESP mesmo sem celular (300 amostras e 64 eventos), média/mínima/máxima e calibração óptica salva em NVS. O histórico é limpo ao reiniciar o ESP. Sensores inferiores para GND e pull-ups externos de 10 kΩ para 3V3. [Montagem e limitações](docs/sensores_monitoramento.md). Somente leitura: não há redução automática de ganho por sensores. A política futura de tolerar pico isolado de ~50 ms e avaliar clipping persistente/recorrente por ~1 s está no roadmap.
+Aba com NTC no GPIO18 (estimativa 10 kΩ/B3950), LDR no LED CLIP no GPIO17, histórico e eventos guardados na RAM do ESP mesmo sem celular (300 amostras e 64 eventos), média/mínima/máxima e calibração óptica salva em NVS. O histórico é limpo ao reiniciar o ESP. Sensores inferiores para GND e pull-ups externos de 10 kΩ para 3V3. [Montagem e limitações](docs/sensores_monitoramento.md). Limiar provisório RAW < 450 ajustável/salvo e captura manual RAW dos últimos 2 s a 20 ms. Somente leitura: não há redução automática de ganho por sensores. A política futura de tolerar pico isolado de ~50 ms e avaliar clipping persistente/recorrente por ~1 s está no roadmap.
 
 ## LED RGB
 
