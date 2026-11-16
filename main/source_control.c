@@ -1,5 +1,6 @@
 #include "source_control.h"
 #include "source_policy.h"
+#include "status_led.h"
 #include <string.h>
 #include "driver/gpio.h"
 #include "esp_log.h"
@@ -40,11 +41,13 @@ void source_control_usb_connected(uint16_t pid) {
     if(pid==SOURCE_BLUETOOTH_PID)exhaustion_logged=false;
     unsigned attempts=policy.attempts;
     portEXIT_CRITICAL(&policy_lock);
+    status_led_usb(true,pid==SOURCE_BLUETOOTH_PID);
     if(pid==SOURCE_BLUETOOTH_PID)ESP_LOGI("source","Target USB 171e confirmed; Bluetooth/HID mode; no pulse");
     else ESP_LOGI("source","USB audio mode %04x; wait for stable enumeration; attempts=%u",pid,attempts);
 }
 void source_control_usb_disconnected(void) {
     portENTER_CRITICAL(&policy_lock);source_policy_disconnected(&policy);portEXIT_CRITICAL(&policy_lock);
+    status_led_usb(false,false);
 }
 bool source_control_ready(void) {
     portENTER_CRITICAL(&policy_lock);bool ready=source_policy_target(&policy);portEXIT_CRITICAL(&policy_lock);return ready;
@@ -62,10 +65,12 @@ static esp_err_t start_pulse(bool automatic) {
     unsigned attempt=policy.attempts;
     portEXIT_CRITICAL(&policy_lock);
     if(!allowed){xSemaphoreGive(available);return ESP_ERR_INVALID_STATE;}
+    status_led_source_error(false);
     last_start=now;has_pulsed=true;
     ESP_ERROR_CHECK(gpio_set_level(MODE_GPIO,0));
     esp_err_t err=esp_timer_start_once(release_timer,PULSE_US);
     if(err!=ESP_OK){gpio_set_level(MODE_GPIO,1);xSemaphoreGive(available);
+        status_led_source_error(true);
         ESP_LOGE("source","Timer failed: %s; line released",esp_err_to_name(err));return err;}
     ESP_LOGI("source","%s pulse GPIO%d low 100 ms, attempt=%u; awaiting USB 171e",automatic?"Automatic":"Requested",MODE_GPIO,attempt);
     return ESP_OK;
@@ -79,7 +84,7 @@ void source_control_poll(void) {
     if(exhausted)exhaustion_logged=true;
     portEXIT_CRITICAL(&policy_lock);
     if(due)start_pulse(true);
-    if(exhausted)ESP_LOGE("source","No target USB 171e after %d attempts; stopped pulses, check GPIO2 wiring",SOURCE_MAX_ATTEMPTS);
+    if(exhausted){status_led_source_error(true);ESP_LOGE("source","No target USB 171e after %d attempts; stopped pulses, check GPIO2 wiring",SOURCE_MAX_ATTEMPTS);}
 }
 static esp_err_t response(httpd_req_t *r,const char *code,const char *json) {
     httpd_resp_set_status(r,code);httpd_resp_set_type(r,"application/json");

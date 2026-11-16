@@ -13,6 +13,7 @@
 #include "presets.h"
 #include "esp_log.h"
 #include "source_control.h"
+#include "status_led.h"
 
 extern const unsigned char html_start[] asm("_binary_index_html_start");
 extern const unsigned char html_end[] asm("_binary_index_html_end");
@@ -85,13 +86,15 @@ static esp_err_t apply_eq(httpd_req_t *r) {
     cJSON_Delete(o);
     if(!valid || !valid_words(w)){ESP_LOGW("http_eq","Invalid EQ payload module=%02x",module);return error(r,"400 Bad Request","Valores de EQ inválidos");}
     ESP_LOGI("http_eq","Requested module=%02x enabled=%u pregain=%.3f dB",module,w[0],(double)(int16_t)w[1]/256);
+    status_led_request_begin();
     // Preserve the third word from a fresh read: its installed-firmware semantics
     // remain uncertain. Do not let a browser alter it.
-    esp_err_t err=dsp_read_eq(module,actual);if(err!=ESP_OK)return usb_error(r,err);
+    esp_err_t err=dsp_read_eq(module,actual);if(err!=ESP_OK){status_led_request_end(module,false);return usb_error(r,err);}
     w[2]=actual[2];
-    err=dsp_apply_eq(module,w,actual);if(err!=ESP_OK)return usb_error(r,err);
+    err=dsp_apply_eq(module,w,actual);if(err!=ESP_OK){status_led_request_end(module,false);return usb_error(r,err);}
     bool matches=true;
     for(int i=0;i<53;i++)if(i!=2 && actual[i]!=w[i])matches=false;
+    status_led_request_end(module,matches);
     ESP_LOGI("http_eq","Confirmed module=%02x matches=%d pregain=%.3f dB duration=%ld ms",module,matches,(double)(int16_t)actual[1]/256,(long)((esp_timer_get_time()-started)/1000));
     return reply_eq(r,actual,matches);
 }
@@ -101,6 +104,7 @@ static esp_err_t status(httpd_req_t *r) {
     return httpd_resp_sendstr(r,"{\"demo\":false}");
 }
 void app_main(void) {
+    status_led_init();
     source_control_init();
     esp_err_t err=nvs_flash_init();
     if(err==ESP_ERR_NVS_NO_FREE_PAGES || err==ESP_ERR_NVS_NEW_VERSION_FOUND){ESP_ERROR_CHECK(nvs_flash_erase());err=nvs_flash_init();}
@@ -123,5 +127,6 @@ void app_main(void) {
     for(size_t i=0;i<sizeof(routes)/sizeof(routes[0]);i++)ESP_ERROR_CHECK(httpd_register_uri_handler(server,&routes[i]));
     presets_register(server);
     source_control_register(server);
+    status_led_system_ready();
     ESP_LOGI("bldsp", "Ready: Wi-Fi BLDSP-Control, http://192.168.4.1/; USB host waiting for DSP");
 }

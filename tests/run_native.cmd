@@ -11,6 +11,10 @@ cl /nologo /std:c11 /W4 /I..\main source_policy_test.c ..\main\source_policy.c /
 if errorlevel 1 exit /b 1
 source_policy_test.exe
 if errorlevel 1 exit /b 1
+cl /nologo /std:c11 /W4 /I..\main status_visual_test.c ..\main\status_visual.c /Fe:status_visual_test.exe
+if errorlevel 1 exit /b 1
+status_visual_test.exe
+if errorlevel 1 exit /b 1
 node ui_test.js
 if errorlevel 1 exit /b 1
 node response_test.js

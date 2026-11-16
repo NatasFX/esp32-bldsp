@@ -27,6 +27,10 @@ Evolução planejada: [roadmap de telemetria e proteção](docs/roadmap_telemetr
 - Frequência de todos os filtros limitada a **24–20000 Hz**, incluindo slider e validação HTTP/presets. Zeros ou valores inferiores a 24 em bandas de snapshots antigos são normalizados na interface antes de enviar. O eixo começa em 10 para mostrar a atenuação abaixo do corte.
 - Curvas RBJ aproximadas: https://www.w3.org/TR/audio-eq-cookbook/ . Não são medição acústica nem incluem outros blocos/crossover. Equivalência exata aos coeficientes internos do firmware não comprovada.
 
+## LED RGB
+
+GPIO48, brilho limitado a 50%: arco-íris quando o controle está operacional; azul na inicialização, amarelo aguardando USB, roxo trocando fonte, ciano sincronizando e vermelho em falha. [Estados e limites](docs/led_status.md).
+
 ## USB e persistência
 
 Descobre interface HID para VID8888, PID171E/1719, sem fixar número da interface. Exige descritor FF00:55AA com Input/Output sem report ID de 256 bytes, versão medida e nomes dos dois módulos antes de escrever. O byte reservado 00 da API Windows não entra no payload USB. SET_REPORT(Output) e GET_REPORT(Input) usam EP0. A hipótese precisa de validação no ESP com o descritor real.

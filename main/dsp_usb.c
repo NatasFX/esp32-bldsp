@@ -10,6 +10,7 @@
 #include "esp_system.h"
 #include "presets.h"
 #include "source_control.h"
+#include "status_led.h"
 
 static const char *TAG="dsp_usb";
 static usb_host_client_handle_t client;
@@ -220,6 +221,7 @@ static void client_task(void *arg) {
         source_control_poll();
         if(dev&&!gone&&iface>=0&&source_control_ready()&&!boot_ready&&esp_timer_get_time()>=boot_retry) {
             boot_ready=apply_boot_preset();boot_retry=esp_timer_get_time()+2000000;
+            status_led_bootstrap(boot_ready);
         }
         int token;
         if(xQueueReceive(queue,&token,0)==pdTRUE){request.result=boot_ready?execute(&request):ESP_ERR_INVALID_STATE;xSemaphoreGive(done);}
