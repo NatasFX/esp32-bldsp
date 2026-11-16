@@ -39,3 +39,5 @@ O vermelho transitório correspondeu a divergência da primeira leitura do módu
 ## Partida com LED apagado — 16/11/2026
 
 Usuário relatou suspeita de brownout na partida. Alterado para quadro RGB zero imediato na inicialização do driver, retenção apagado até 3 s após serviços prontos e rampa de 1 s até o brilho configurado. Testes C cobrem ausência de luz antes do prazo, início em zero e rampa até o limite. Nos logs disponíveis havia resets POWERON, sem mensagem explícita de brownout; causa elétrica não confirmada. A mudança reduz a iluminação durante a partida, mas não valida por si só a fonte de alimentação.
+
+Validação após gravação na COM7: quadro preto registrado em 446 ms de boot, serviços prontos em 686 ms e liberação gradual dos indicadores em 3696 ms (3010 ms depois). Troca automática de fonte e confirmação dos dois EQs continuaram funcionando; estado operacional rainbow em 7496 ms. Nenhuma mensagem explícita de brownout nessa captura. O teste foi por reset serial, não substitui ensaio de desligar/ligar a alimentação realizado pelo usuário.
