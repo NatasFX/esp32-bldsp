@@ -35,6 +35,10 @@ class Handler(BaseHTTPRequestHandler):
             self.reply((ROOT / 'main/eq-response.js').read_text(encoding='utf-8'), mime='application/javascript; charset=utf-8')
         elif route == '/api/status':
             self.reply({'demo': True})
+        elif route == '/api/telemetry':
+            self.reply({'temperature': {'status': 'unavailable', 'celsius': None},
+                        'clip': {'status': 'uncalibrated', 'active': None},
+                        'automatic_protection': False})
         elif route == '/api/eq':
             try:
                 output = self.output()
@@ -68,6 +72,8 @@ class Handler(BaseHTTPRequestHandler):
                 if data != {}:
                     raise ValueError('Expected empty object')
                 self.reply({'accepted': True, 'pulse_ms': 100, 'demo': True}, 202)
+            elif route == '/api/telemetry/ldr':
+                self.reply({'error': 'Calibre os sensores conectado ao ESP32 real.'}, 400)
             else:
                 self.reply({'error': 'Not found'}, 404)
         except (ValueError, KeyError, TypeError):

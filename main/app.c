@@ -14,6 +14,7 @@
 #include "esp_log.h"
 #include "source_control.h"
 #include "status_led.h"
+#include "telemetry.h"
 
 extern const unsigned char html_start[] asm("_binary_index_html_start");
 extern const unsigned char html_end[] asm("_binary_index_html_end");
@@ -116,7 +117,8 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP,&wifi));
     ESP_ERROR_CHECK(esp_wifi_start());
     dsp_usb_start();
-    httpd_config_t cfg=HTTPD_DEFAULT_CONFIG();cfg.stack_size=8192;cfg.recv_wait_timeout=5;cfg.send_wait_timeout=5;
+    telemetry_start();
+    httpd_config_t cfg=HTTPD_DEFAULT_CONFIG();cfg.max_uri_handlers=12;cfg.stack_size=8192;cfg.recv_wait_timeout=5;cfg.send_wait_timeout=5;
     httpd_handle_t server;ESP_ERROR_CHECK(httpd_start(&server,&cfg));
     const httpd_uri_t routes[]={
         {.uri="/",.method=HTTP_GET,.handler=root},
@@ -127,6 +129,7 @@ void app_main(void) {
     for(size_t i=0;i<sizeof(routes)/sizeof(routes[0]);i++)ESP_ERROR_CHECK(httpd_register_uri_handler(server,&routes[i]));
     presets_register(server);
     source_control_register(server);
+    telemetry_register(server);
     status_led_system_ready();
     ESP_LOGI("bldsp", "Ready: Wi-Fi BLDSP-Control, http://192.168.4.1/; USB host waiting for DSP");
 }

@@ -81,7 +81,7 @@ void status_led_init(void) {
         .resolution_hz=10000000,.mem_block_symbols=64,.trans_queue_depth=1};
     esp_err_t err=rmt_new_tx_channel(&tx,&channel);
     if(err!=ESP_OK){ESP_LOGE("status_led","GPIO48 RMT init: %s",esp_err_to_name(err));return;}
-    const rmt_copy_encoder_config_t copy={0};
+    const rmt_copy_encoder_config_t copy={};
     err=rmt_new_copy_encoder(&copy,&encoder);
     if(err==ESP_OK)err=rmt_enable(channel);
     if(err!=ESP_OK){

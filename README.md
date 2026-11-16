@@ -27,6 +27,10 @@ Evolução planejada: [roadmap de telemetria e proteção](docs/roadmap_telemetr
 - Frequência de todos os filtros limitada a **24–20000 Hz**, incluindo slider e validação HTTP/presets. Zeros ou valores inferiores a 24 em bandas de snapshots antigos são normalizados na interface antes de enviar. O eixo começa em 10 para mostrar a atenuação abaixo do corte.
 - Curvas RBJ aproximadas: https://www.w3.org/TR/audio-eq-cookbook/ . Não são medição acústica nem incluem outros blocos/crossover. Equivalência exata aos coeficientes internos do firmware não comprovada.
 
+## Monitoramento
+
+Aba com NTC no GPIO18 (estimativa 10 kΩ/B3950), LDR no LED CLIP no GPIO17, histórico, eventos e calibração óptica salva no ESP. Sensores inferiores para GND e pull-ups externos de 10 kΩ para 3V3. [Montagem e limitações](docs/sensores_monitoramento.md). Somente leitura: não há redução automática de ganho por sensores. A política futura de tolerar pico isolado de ~50 ms e avaliar clipping persistente/recorrente por ~1 s está no roadmap.
+
 ## LED RGB
 
 GPIO48, brilho limitado a 50%: arco-íris quando o controle está operacional; apagado na inicialização e por mais 3 s após os serviços (acendimento gradual em 1 s), amarelo aguardando USB, roxo trocando fonte, ciano sincronizando e vermelho em falha. [Estados e limites](docs/led_status.md).

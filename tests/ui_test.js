@@ -12,6 +12,7 @@ const context=vm.createContext({URL,document,window:{addEventListener(){}},conso
  fetch:async(url,opts)=>{
   calls.push({url,opts});if(url==='/api/status')return {ok:true,json:async()=>({demo:true})};
   if(url==='/api/source/pulse')return {ok:true,json:async()=>({accepted:true,pulse_ms:100,demo:true})};
+  if(url==='/api/telemetry')return {ok:true,json:async()=>({temperature:{status:'unavailable',celsius:null},clip:{status:'uncalibrated',active:null}})};
   const key=url.includes('stereo')?'stereo':'sub';
   if(opts?.method==='POST'){
    const words=JSON.parse(opts.body).words.slice();
@@ -66,5 +67,15 @@ function change(id,value){element(id).value=String(value);element('editor').inpu
  assert.equal(element('source-pulse').disabled,true);
  const sourceUnlock=[...timers.values()].find(t=>t.ms===1500);assert.ok(sourceUnlock);sourceUnlock.fn();
  assert.equal(element('source-pulse').disabled,false);
+ // Opening monitoring must preserve unsaved EQ and never interpret absent sensors as zero/normal.
+ const draftBefore=run('JSON.stringify(outputs.sub.draft)'),beforeMonitorPosts=posts().length;
+ element('view-monitor').onclick();await settle();
+ assert.equal(element('eq-view').hidden,true);assert.equal(element('monitor-view').hidden,false);
+ assert.equal(element('monitor-temperature').textContent,'—');assert.equal(element('monitor-clip').textContent,'Sem leitura');
+ assert.equal(posts().length,beforeMonitorPosts);assert.equal(run('JSON.stringify(outputs.sub.draft)'),draftBefore);
+ run("renderMonitor({temperature:{status:'estimated',celsius:32.4,resistance_ohm:7200,millivolts:1380},clip:{status:'ok',active:true,count:3}})");
+ assert.equal(element('monitor-temperature').textContent,'32,4');assert.equal(element('monitor-clip').textContent,'CLIP detectado');
+ run('monitorUnavailable()');assert.equal(element('monitor-temperature').textContent,'—');assert.equal(element('monitor-clip').textContent,'Sem leitura');
+ element('view-eq').onclick();assert.equal(element('monitor-view').hidden,true);assert.equal(element('eq-view').hidden,false);
  console.log('UI: preset-1 boot, automatic two-output apply, coalescing, invalid-edit suppression, in-flight latest-wins, toggles, Q, double tap, volume, preset save isolation and reset OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});
