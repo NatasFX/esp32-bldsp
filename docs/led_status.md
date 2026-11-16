@@ -18,3 +18,19 @@ Desconectar o USB tira o LED de operacional. Falhas de aplicação são mantidas
 RMT envia os 24 bits e reset com temporização de hardware. O buffer é persistente e só é reutilizado após fim da transmissão; uma falha no indicador é registrada e interrompe a tarefa do LED, sem abortar o controle de áudio. Nenhuma tarefa de animação bloqueia a tarefa USB ou o temporizador de 100 ms do GPIO2. Não compartilhar GPIO48 com outro circuito. Se o jumper de alimentação/controle RGB desta revisão estiver aberto, o software não o substitui.
 
 Os logs `status_led` registram GPIO, limite de brilho e transições de estado, sem gerar uma linha por quadro. A lógica de prioridade, ciclo de cores e limite de 128 são exercitados pelo teste C real `status_visual_test.c`. A emissão física de luz requer conferência do usuário.
+
+## Gravação e verificação por serial — 15/11/2026
+
+Build completo passou, firmware foi gravado na COM7 e os hashes foram conferidos pelo esptool. Driver RMT iniciou e a tarefa RGB registrou a sequência de estados. Houve falha inicial de enumeração USB, recuperada automaticamente; depois:
+
+```text
+I (9776) status_led: State: switching source purple
+I (10766) source: Automatic pulse GPIO2 low 100 ms, attempt=1; awaiting USB 171e
+I (10866) source: GPIO2 released; pulse elapsed=100066 us
+I (12056) status_led: State: sync cyan
+I (12456) status_led: State: error red
+I (14846) dsp_usb: Preset 1 applied to stereo + sub; no DSP flash save
+I (14856) status_led: State: operational rainbow
+```
+
+O vermelho transitório correspondeu a divergência da primeira leitura do módulo 91; a repetição do bootstrap confirmou as duas saídas e então liberou o arco-íris. Não houve erro RMT nessa captura. Emissão física e correspondência das cores ainda devem ser confirmadas pelo usuário, pois o computador só observa o comando e os logs.
