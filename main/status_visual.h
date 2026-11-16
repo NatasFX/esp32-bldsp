@@ -9,3 +9,4 @@ typedef enum {LED_BOOT,LED_WAIT_USB,LED_SWITCHING,LED_SYNC,LED_ERROR,LED_READY} 
 typedef struct {uint8_t r,g,b;} status_rgb_t;
 status_kind_t status_visual_kind(const status_snapshot_t *s);
 status_rgb_t status_visual_color(status_kind_t kind,uint64_t milliseconds);
+status_rgb_t status_visual_startup_color(const status_snapshot_t *s,uint64_t now_ms,uint64_t ready_ms);

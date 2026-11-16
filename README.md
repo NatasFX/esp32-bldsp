@@ -29,7 +29,7 @@ Evolução planejada: [roadmap de telemetria e proteção](docs/roadmap_telemetr
 
 ## LED RGB
 
-GPIO48, brilho limitado a 50%: arco-íris quando o controle está operacional; azul na inicialização, amarelo aguardando USB, roxo trocando fonte, ciano sincronizando e vermelho em falha. [Estados e limites](docs/led_status.md).
+GPIO48, brilho limitado a 50%: arco-íris quando o controle está operacional; apagado na inicialização e por mais 3 s após os serviços (acendimento gradual em 1 s), amarelo aguardando USB, roxo trocando fonte, ciano sincronizando e vermelho em falha. [Estados e limites](docs/led_status.md).
 
 ## USB e persistência
 

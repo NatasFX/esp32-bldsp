@@ -10,12 +10,19 @@
 static portMUX_TYPE state_lock=portMUX_INITIALIZER_UNLOCKED;
 static status_snapshot_t state;
 static unsigned requests,error_modules;
+static uint64_t services_ready_ms;
 static rmt_channel_handle_t channel;
 static rmt_encoder_handle_t encoder;
 // Persistent payload: never reused before the TX completion or channel disable.
 static rmt_symbol_word_t symbols[25];
 
-void status_led_system_ready(void){portENTER_CRITICAL(&state_lock);state.system_ready=true;portEXIT_CRITICAL(&state_lock);}
+void status_led_system_ready(void){
+    portENTER_CRITICAL(&state_lock);
+    if(!state.system_ready)services_ready_ms=(uint64_t)esp_timer_get_time()/1000;
+    state.system_ready=true;
+    portEXIT_CRITICAL(&state_lock);
+    ESP_LOGI("status_led","Services ready; RGB remains off for 3000 ms, then fades in over 1000 ms");
+}
 void status_led_usb(bool present,bool target) {
     portENTER_CRITICAL(&state_lock);
     if(state.usb_present!=present || state.bluetooth_mode!=target){
@@ -52,13 +59,16 @@ static esp_err_t write_color(status_rgb_t c) {
     return err==ESP_OK?rmt_tx_wait_all_done(channel,20):err;
 }
 static void led_task(void *arg) {
-    (void)arg;int previous=-1;
+    (void)arg;int previous=-1;bool indicators_started=false;
     const char *names[]={"boot blue","waiting USB amber","switching source purple","sync cyan","error red","operational rainbow"};
     while(1){
-        portENTER_CRITICAL(&state_lock);status_snapshot_t snapshot=state;portEXIT_CRITICAL(&state_lock);
+        portENTER_CRITICAL(&state_lock);status_snapshot_t snapshot=state;uint64_t ready_ms=services_ready_ms;portEXIT_CRITICAL(&state_lock);
+        uint64_t now_ms=(uint64_t)esp_timer_get_time()/1000;
+        if(!snapshot.system_ready || now_ms-ready_ms<3000){vTaskDelay(pdMS_TO_TICKS(40));continue;}
+        if(!indicators_started){ESP_LOGI("status_led","Startup delay complete; enabling RGB indicators gradually");indicators_started=true;}
         status_kind_t kind=status_visual_kind(&snapshot);
         if((int)kind!=previous){ESP_LOGI("status_led","State: %s",names[kind]);previous=kind;}
-        esp_err_t err=write_color(status_visual_color(kind,(uint64_t)esp_timer_get_time()/1000));
+        esp_err_t err=write_color(status_visual_startup_color(&snapshot,now_ms,ready_ms));
         if(err!=ESP_OK){
             ESP_LOGE("status_led","RMT failed: %s; indicator stopped, audio control continues",esp_err_to_name(err));
             rmt_disable(channel);vTaskDelete(NULL);return;
@@ -79,6 +89,13 @@ void status_led_init(void) {
         if(encoder)rmt_del_encoder(encoder);
         rmt_del_channel(channel);return;
     }
+    // Explicit black frame: pulling DIN low alone does not clear a latched WS2812.
+    err=write_color((status_rgb_t){0,0,0});
+    if(err!=ESP_OK){
+        ESP_LOGE("status_led","Cannot clear RGB: %s",esp_err_to_name(err));
+        rmt_disable(channel);rmt_del_encoder(encoder);rmt_del_channel(channel);return;
+    }
+    ESP_LOGI("status_led","RGB explicitly off at startup; waiting for services and stabilization");
     if(xTaskCreate(led_task,"status_rgb",3072,NULL,2,NULL)!=pdPASS){
         ESP_LOGE("status_led","Cannot create RGB task");rmt_disable(channel);rmt_del_encoder(encoder);rmt_del_channel(channel);return;
     }

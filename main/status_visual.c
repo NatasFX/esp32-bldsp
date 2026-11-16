@@ -1,4 +1,11 @@
 #include "status_visual.h"
+status_rgb_t status_visual_startup_color(const status_snapshot_t *s,uint64_t now_ms,uint64_t ready_ms) {
+    if(!s->system_ready || now_ms<ready_ms || now_ms-ready_ms<3000)return (status_rgb_t){0,0,0};
+    uint64_t age=now_ms-ready_ms-3000;
+    status_rgb_t c=status_visual_color(status_visual_kind(s),now_ms);
+    if(age<1000){c.r=(uint8_t)(c.r*age/1000);c.g=(uint8_t)(c.g*age/1000);c.b=(uint8_t)(c.b*age/1000);}
+    return c;
+}
 status_kind_t status_visual_kind(const status_snapshot_t *s) {
     if(!s->system_ready)return LED_BOOT;
     if(!s->usb_present)return LED_WAIT_USB;

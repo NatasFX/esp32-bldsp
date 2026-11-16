@@ -1,10 +1,10 @@
 # LED RGB de status
 
-LED endereçável da placa no **GPIO48**, confirmado pelo usuário. Implementado via RMT nativo do ESP32-S3, sem dependência externa. Ordem GRB, uma posição, atualização de aproximadamente 25 Hz em tarefa de prioridade baixa. Cada componente RGB fica limitado a 128/255 (~50% do comando máximo); isso não é uma medição de potência elétrica ou brilho percebido.
+LED endereçável da placa no **GPIO48**, confirmado pelo usuário. Ao iniciar o aplicativo, transmite quadro preto explícito para apagar o LED, inclusive em reset com o WS2812 ainda alimentado. Nenhuma animação começa antes da inicialização dos serviços mais 3 s; então o brilho sobe gradualmente por 1 s. A espera acontece só na tarefa do indicador, sem atrasar Wi-Fi, USB ou controle de fonte. O firmware não controla o LED antes de entrar no aplicativo/driver. Implementado via RMT nativo do ESP32-S3, sem dependência externa. Ordem GRB, uma posição, atualização de aproximadamente 25 Hz em tarefa de prioridade baixa. Cada componente RGB fica limitado a 128/255 (~50% do comando máximo); isso não é uma medição de potência elétrica ou brilho percebido.
 
 | Indicação | Significado |
 |---|---|
-| Azul com respiração | Inicialização dos serviços |
+| Apagado na partida | Aguarda os serviços e mais 3 s de estabilização; depois acende gradualmente em 1 s |
 | Amarelo com respiração | Sem BLDSP USB reconhecida |
 | Roxo com respiração | BLDSP em áudio USB; aguardando troca para Bluetooth/HID |
 | Ciano com respiração | Bootstrap/aplicação de EQ ainda pendente ou requisição de ajuste em execução |
@@ -34,3 +34,8 @@ I (14856) status_led: State: operational rainbow
 ```
 
 O vermelho transitório correspondeu a divergência da primeira leitura do módulo 91; a repetição do bootstrap confirmou as duas saídas e então liberou o arco-íris. Não houve erro RMT nessa captura. Emissão física e correspondência das cores ainda devem ser confirmadas pelo usuário, pois o computador só observa o comando e os logs.
+
+
+## Partida com LED apagado — 16/11/2026
+
+Usuário relatou suspeita de brownout na partida. Alterado para quadro RGB zero imediato na inicialização do driver, retenção apagado até 3 s após serviços prontos e rampa de 1 s até o brilho configurado. Testes C cobrem ausência de luz antes do prazo, início em zero e rampa até o limite. Nos logs disponíveis havia resets POWERON, sem mensagem explícita de brownout; causa elétrica não confirmada. A mudança reduz a iluminação durante a partida, mas não valida por si só a fonte de alimentação.

@@ -23,6 +23,20 @@ int main(void) {
     assert(start.r==end.r && start.g==end.g && start.b==end.b);
     status_rgb_t on=status_visual_color(LED_ERROR,0),off=status_visual_color(LED_ERROR,500);
     assert(on.r==128 && off.r==0 && on.g==0 && on.b==0);
+    // No light until services are ready plus three seconds; then a one-second fade.
+    for(unsigned ms=0;ms<8000;ms++){
+        status_rgb_t c=status_visual_startup_color(&s,ms,5000);
+        assert(c.r==0 && c.g==0 && c.b==0);
+    }
+    status_rgb_t beginning=status_visual_startup_color(&s,8000,5000);
+    assert(beginning.r==0 && beginning.g==0 && beginning.b==0);
+    status_rgb_t half=status_visual_startup_color(&s,8500,5000);
+    assert(half.r<=64 && half.g<=64 && half.b<=64);
+    status_rgb_t full=status_visual_startup_color(&s,9000,5000),expected=status_visual_color(LED_READY,9000);
+    assert(full.r==expected.r && full.g==expected.g && full.b==expected.b);
+    s.system_ready=false;
+    status_rgb_t not_ready=status_visual_startup_color(&s,50000,0);
+    assert(not_ready.r==0 && not_ready.g==0 && not_ready.b==0);
     puts("RGB: operational gating, error priority, animation cycle and 50-percent channel cap OK");
     return 0;
 }
