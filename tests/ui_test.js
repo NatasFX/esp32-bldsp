@@ -11,6 +11,7 @@ const context=vm.createContext({URL,document,window:{addEventListener(){}},conso
  setTimeout:(fn,ms)=>{const id=++timerId;timers.set(id,{fn,ms});return id;},clearTimeout:id=>timers.delete(id),
  fetch:async(url,opts)=>{
   calls.push({url,opts});if(url==='/api/status')return {ok:true,json:async()=>({demo:true})};
+  if(url==='/api/source/pulse')return {ok:true,json:async()=>({accepted:true,pulse_ms:100,demo:true})};
   const key=url.includes('stereo')?'stereo':'sub';
   if(opts?.method==='POST'){
    const words=JSON.parse(opts.body).words.slice();
@@ -57,5 +58,13 @@ function change(id,value){element(id).value=String(value);element('editor').inpu
  assert.throws(()=>run("demoPreset('/api/preset?slot=5')"));
  for(const c of posts()){assert.ok(c.url.startsWith('/api/eq?output='));assert.equal(c.opts.headers['X-BLDSP'],'1');}
  assert.ok(!calls.some(c=>c.url==='/api/save'));
+ // Source is a one-shot toggle: never invoked at boot or retried automatically.
+ assert.equal(calls.filter(c=>c.url==='/api/source/pulse').length,0);
+ const pulse=element('source-pulse').onclick();await element('source-pulse').onclick();await pulse;
+ const sourceCalls=calls.filter(c=>c.url==='/api/source/pulse');assert.equal(sourceCalls.length,1);
+ assert.equal(sourceCalls[0].opts.body,'{}');assert.equal(sourceCalls[0].opts.headers['X-BLDSP'],'1');
+ assert.equal(element('source-pulse').disabled,true);
+ const sourceUnlock=[...timers.values()].find(t=>t.ms===1500);assert.ok(sourceUnlock);sourceUnlock.fn();
+ assert.equal(element('source-pulse').disabled,false);
  console.log('UI: preset-1 boot, automatic two-output apply, coalescing, invalid-edit suppression, in-flight latest-wins, toggles, Q, double tap, volume, preset save isolation and reset OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});

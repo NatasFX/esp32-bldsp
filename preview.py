@@ -64,6 +64,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.reply({'words': words[output].copy(), 'matches': True, 'demo': True, 'output': output})
             elif route == '/api/save':
                 self.reply({'sent': False, 'demo': True, 'persistence_verified': False})
+            elif route == '/api/source/pulse':
+                if data != {}:
+                    raise ValueError('Expected empty object')
+                self.reply({'accepted': True, 'pulse_ms': 100, 'demo': True}, 202)
             else:
                 self.reply({'error': 'Not found'}, 404)
         except (ValueError, KeyError, TypeError):

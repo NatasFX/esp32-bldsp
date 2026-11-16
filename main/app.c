@@ -12,6 +12,7 @@
 #include "esp_timer.h"
 #include "presets.h"
 #include "esp_log.h"
+#include "source_control.h"
 
 extern const unsigned char html_start[] asm("_binary_index_html_start");
 extern const unsigned char html_end[] asm("_binary_index_html_end");
@@ -100,6 +101,7 @@ static esp_err_t status(httpd_req_t *r) {
     return httpd_resp_sendstr(r,"{\"demo\":false}");
 }
 void app_main(void) {
+    source_control_init();
     esp_err_t err=nvs_flash_init();
     if(err==ESP_ERR_NVS_NO_FREE_PAGES || err==ESP_ERR_NVS_NEW_VERSION_FOUND){ESP_ERROR_CHECK(nvs_flash_erase());err=nvs_flash_init();}
     ESP_ERROR_CHECK(err);ESP_ERROR_CHECK(presets_init());ESP_ERROR_CHECK(esp_netif_init());
@@ -120,5 +122,6 @@ void app_main(void) {
         {.uri="/api/status",.method=HTTP_GET,.handler=status}};
     for(size_t i=0;i<sizeof(routes)/sizeof(routes[0]);i++)ESP_ERROR_CHECK(httpd_register_uri_handler(server,&routes[i]));
     presets_register(server);
+    source_control_register(server);
     ESP_LOGI("bldsp", "Ready: Wi-Fi BLDSP-Control, http://192.168.4.1/; USB host waiting for DSP");
 }

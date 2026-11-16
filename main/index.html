@@ -34,6 +34,7 @@
 
 <form id="editor"><div id="bands"></div></form>
 <p class="mini">A música segue no Bluetooth do celular. A rede Wi-Fi serve para os ajustes.</p>
+<details><summary>Fonte de áudio</summary><p class="mini">Um toque alterna a fonte da BLDSP, como o botão físico.</p><button id="source-pulse" class="secondary" type="button" disabled>Trocar fonte</button><p id="source-result" class="mini" role="status" aria-live="polite"></p></details>
 <script src="/eq-response.js"></script>
 <script>
 'use strict';
@@ -46,6 +47,7 @@ let sendTimer=null,sending=null,initialized=false,uiFailure=null,syncFailure=nul
 const pending=new Map();
 let revision=0;
 let volumeInput=false;
+let sourceBusy=false;
 const rightParams=Array(10).fill(null);
 const displayedQ=Array(10).fill(null);
 let active='sub',original=null,dirty=false,busy=false,selected=5,demo=false,markers=[];
@@ -93,6 +95,7 @@ function renderSync(){
 function status(text){$('status').textContent=text;renderSync();}
 $('sync-status').onclick=()=>{$('status').hidden=!$('status').hidden;};
 function controls(){
+ $('source-pulse').disabled=busy||sourceBusy||!initialized;
  $('enabled').disabled=busy||!original;$('pregain-slider').disabled=busy||!original;
  for(let slot=1;slot<=4;slot++){$('preset-'+slot).disabled=busy||!outputs.sub.words||!outputs.stereo.words;$('preset-'+slot).setAttribute('aria-pressed',String(slot===presetSlot));}for(const id of ['preset-save','preset-reset'])$(id).disabled=busy||!outputs.sub.words||!outputs.stereo.words;
 
@@ -188,6 +191,16 @@ async function switchOutput(key){
 for(const k of Object.keys(outputs))$('tab-'+k).onclick=()=>switchOutput(k);
 $('editor').addEventListener('input',markEdited);
 $('enabled').onchange=markEdited;
+$('source-pulse').onclick=async()=>{
+ if(sourceBusy||busy||!initialized)return;
+ sourceBusy=true;controls();$('source-result').textContent='Enviando comando…';
+ try{
+  const result=await api('/api/source/pulse',{});
+  if(!result.accepted)throw Error('Sem confirmação');
+  $('source-result').textContent='Comando enviado. Confira a fonte selecionada na BLDSP.';
+ }catch(e){$('source-result').textContent='Sem confirmação da troca. Confira a fonte antes de tentar novamente.';}
+ finally{setTimeout(()=>{sourceBusy=false;controls();},1500);}
+};
 $('pregain-slider').oninput=()=>{const p=Number($('pregain-slider').value);$('pregain').value=pregainSliderDb(p);volumeInput=true;try{markEdited();}finally{volumeInput=false;}};
 for(const id of ['individual','compare'])$(id).onchange=draw;
 $('response').onclick=e=>{const r=$('response').getBoundingClientRect(),xx=e.clientX-r.left,yy=e.clientY-r.top;const nearest=markers.slice().sort((a,b)=>Math.hypot(a.x-xx,a.y-yy)-Math.hypot(b.x-xx,b.y-yy))[0];if(nearest&&Math.hypot(nearest.x-xx,nearest.y-yy)<30)selectBand(nearest.i);};
