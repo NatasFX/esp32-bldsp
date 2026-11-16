@@ -51,3 +51,17 @@ No SDK relacionado (`audio/communication.c`, Communication EQ), o seletor FF cop
 Correção: após o bloco completo, enviar seletor 01 com vizinho de um passo Q8.8 e depois o alvo. O passo intermediário é −1/256 dB relativo ao alvo; no mínimo −128 dB usa +1/256 dB para não ultrapassar a faixa. Isso força reconfiguração mesmo quando a palavra lida já coincide com o alvo. Bloco inteiro, atualização individual e consulta permanecem na mesma tarefa USB, serializados. O formato escalar foi conferido contra a captura ACP −0,10 dB (`A5 5A 93 03 01 E6 FF 16`).
 
 Logs novos: abertura da página, POST/URI/tamanho, módulo/enable/pré-ganho solicitados, TX USB, atualização de ganho em tempo real enviada, RX e confirmação/matches/duração ou erro USB. Nenhuma senha nos logs. Necessária confirmação auditiva após gravação; retorno de parâmetros não comprova atualização sonora.
+
+## Troca automática de fonte validada no GPIO2
+
+Usuário confirmou a ligação do GPIO2 ao contato de modo. Em novo boot, sem acionamento manual do botão:
+
+```text
+I (4152) source: USB audio mode 1719; wait for stable enumeration; attempts=0
+I (5162) source: Automatic pulse GPIO2 low 100 ms, attempt=1; awaiting USB 171e
+I (5262) source: GPIO2 released; pulse elapsed=100065 us
+I (6432) source: Target USB 171e confirmed; Bluetooth/HID mode; no pulse
+I (9232) dsp_usb: Preset 1 applied to stereo + sub; no DSP flash save
+```
+
+Após a enumeração alvo houve uma divergência transitória na leitura do módulo 91 (palavra 7); a repetição do bootstrap confirmou os dois módulos. Nenhum segundo pulso foi gerado. A sequência confirmou recuperação de 1719 para 171E por comando do ESP e posterior aplicação do preset, sem depender do navegador. A duração de pulso indicada é medida pelo software. Testes prolongados, power-cycle completo e continuidade auditiva durante a troca ainda devem ser conferidos.

@@ -51,11 +51,11 @@ Usar a USB-UART para programar/depurar e reservar a USB nativa para a BLDSP. Fla
 ## Bancada e validação pendente
 
 1. Confirmar porta nativa GPIO19 D− / GPIO20 D+ e alimentação VBUS de 5 V. Placa com duas USB-C pode não alimentar host nem aceitar cabo C–C comum; conferir esquema/CC/adaptador antes de conectar e não unir saídas de fontes diferentes.
-2. Conectar o contato de troca de fonte ao GPIO2 conforme [controle de fonte](docs/controle_fonte.md). O ESP espera USB 1719 estável, aplica pulso de 100 ms e aguarda 171E antes do preset. Se retornar ao modo USB, tenta novamente, com espera e limite de tentativas. Ligação e troca física ainda precisam de validação.
+2. Conectar o contato de troca de fonte ao GPIO2 conforme [controle de fonte](docs/controle_fonte.md). O ESP espera USB 1719 estável, aplica pulso de 100 ms e aguarda 171E antes do preset. Se retornar ao modo USB, tenta novamente, com espera e limite de tentativas. Ligação no GPIO2 e troca automática 1719 → 171E confirmadas em teste físico em 15/11/2026.
 3. Como agora a conexão aplica automaticamente o preset 1, primeiro teste deve usar volume baixo e saídas de potência controladas. Conferir EQs e continuidade da música; testar reconexão e valores extremos gradualmente.
 4. Validar retenção de presets no ESP após desligar/ligar e reaplicação sem navegador aberto. Testar desconexão durante edição e falhas parciais.
 
-Ainda **não houve build completo IDF nem teste USB em ESP físico**; ambiente IDF não estava instalado. Nada foi gravado no firmware da BLDSP. A prévia da LAN é somente simulação.
+Build completo e gravação no ESP32-S3 confirmados com ESP-IDF v5.4-dev instalado. USB HID, aplicação/leitura dos dois EQs, pré-ganho audível (confirmado pelo usuário) e troca automática de fonte via GPIO2 foram validados. [Registro de bancada](docs/primeiro_teste_esp32.md). Persistência e testes prolongados continuam pendentes. Nada foi gravado no firmware da BLDSP. A prévia da LAN é somente simulação.
 
 ## Prévia local
 
