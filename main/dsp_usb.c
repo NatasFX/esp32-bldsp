@@ -9,6 +9,7 @@
 #include "esp_timer.h"
 #include "esp_system.h"
 #include "presets.h"
+#include "source_control.h"
 
 static const char *TAG="dsp_usb";
 static usb_host_client_handle_t client;
@@ -29,6 +30,7 @@ static void event(const usb_host_client_event_msg_t *msg, void *arg) {
     if(msg->event==USB_HOST_CLIENT_EVENT_NEW_DEV && !dev) address=msg->new_dev.address;
     if(msg->event==USB_HOST_CLIENT_EVENT_DEV_GONE && msg->dev_gone.dev_hdl==dev) {
         gone=true; profile_ok=false;
+        source_control_usb_disconnected();
     }
 }
 static void complete(usb_transfer_t *t) {(void)t; finished=true;}
@@ -64,6 +66,7 @@ static esp_err_t control(uint8_t type, uint8_t req, uint16_t value,
 static void close_device(void) {
     if(!dev || in_transfer) return;
     ESP_LOGI(TAG,"Closing USB device");
+    source_control_usb_disconnected();
     if(iface>=0) usb_host_interface_release(client,dev,iface);
     usb_host_device_close(client,dev);
     dev=NULL;iface=-1;gone=false;profile_ok=false;boot_ready=false;boot_retry=0;
@@ -112,7 +115,8 @@ static void open_device(void) {
                 iface=candidate;
                 if(control(0x81,6,0x2200,iface,descriptor,report_len)==ESP_OK &&
                    report_matches(descriptor,report_len)) {
-                    ESP_LOGI(TAG,"Vendor HID interface %d, reports 256 bytes",iface);return;
+                    ESP_LOGI(TAG,"Vendor HID interface %d, reports 256 bytes",iface);
+                    source_control_usb_connected(dd->idProduct);return;
                 }
                 usb_host_interface_release(client,dev,iface);iface=-1;
             }
@@ -213,7 +217,8 @@ static void client_task(void *arg) {
         usb_host_client_handle_events(client,pdMS_TO_TICKS(10));
         if(gone)close_device();
         if(address && !dev)open_device();
-        if(dev&&!gone&&iface>=0&&!boot_ready&&esp_timer_get_time()>=boot_retry) {
+        source_control_poll();
+        if(dev&&!gone&&iface>=0&&source_control_ready()&&!boot_ready&&esp_timer_get_time()>=boot_retry) {
             boot_ready=apply_boot_preset();boot_retry=esp_timer_get_time()+2000000;
         }
         int token;

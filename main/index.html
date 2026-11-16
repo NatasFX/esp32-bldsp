@@ -34,7 +34,7 @@
 
 <form id="editor"><div id="bands"></div></form>
 <p class="mini">A música segue no Bluetooth do celular. A rede Wi-Fi serve para os ajustes.</p>
-<details><summary>Fonte de áudio</summary><p class="mini">Um toque alterna a fonte da BLDSP, como o botão físico.</p><button id="source-pulse" class="secondary" type="button" disabled>Trocar fonte</button><p id="source-result" class="mini" role="status" aria-live="polite"></p></details>
+<details><summary>Fonte de áudio</summary><p class="mini">Bluetooth é selecionado automaticamente após a conexão USB. Use o botão para tentar novamente.</p><button id="source-pulse" class="secondary" type="button" disabled>Ativar Bluetooth</button><p id="source-result" class="mini" role="status" aria-live="polite"></p></details>
 <script src="/eq-response.js"></script>
 <script>
 'use strict';
@@ -197,7 +197,7 @@ $('source-pulse').onclick=async()=>{
  try{
   const result=await api('/api/source/pulse',{});
   if(!result.accepted)throw Error('Sem confirmação');
-  $('source-result').textContent='Comando enviado. Confira a fonte selecionada na BLDSP.';
+  $('source-result').textContent=result.already_target?'Modo Bluetooth/HID já confirmado pelo USB.':'Pulso enviado. Aguardando a mudança do USB da BLDSP.';
  }catch(e){$('source-result').textContent='Sem confirmação da troca. Confira a fonte antes de tentar novamente.';}
  finally{setTimeout(()=>{sourceBusy=false;controls();},1500);}
 };
