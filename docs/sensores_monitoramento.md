@@ -26,3 +26,9 @@ As referências são salvas em NVS somente ao capturar. Detecção usa ponto mé
 Nenhum valor destes sensores altera ganho, mute ou limite térmico. A proposta futura registrada pelo usuário tolera pico isolado de ~50 ms e avalia redução gradual com clipping contínuo/recorrente por ~1 s. Essa política deve usar tempo real do sensor, nunca os 2 s retidos do indicador. Limites de temperatura, recuperação e intensidade da redução ainda não definidos.
 
 Referência ADC2/Wi-Fi e erro de arbitragem: https://docs.espressif.com/projects/esp-idf/en/v5.4/esp32s3/api-reference/peripherals/adc_oneshot.html
+
+## Validação de bancada — 16/11/2026
+
+Build completo ESP-IDF e testes C/JS passaram; firmware gravado na COM7 com hashes conferidos. ADC2 iniciou com Wi-Fi AP e USB ativos. Logs observaram GPIO17 em ~352–373 mV com conversões válidas e GPIO18 em 0 mV. Isto confirma aquisição, não montagem/calibração dos sensores. A conversão de temperatura recusa 0 mV e o CLIP permanece sem interpretação até obter referências válidas. EQs e seleção automática de fonte voltaram ao estado operacional. Layout em viewport móvel de 390 px foi renderizado e verificado sem overflow horizontal; testes exercitam abas, leituras ausentes, perda de conexão e preservação das edições de EQ.
+
+Usuário confirmou usar resistor pull-up de 10 kΩ em ambos. Permanecem pendentes validação física do NTC em temperatura de referência e calibração do LDR contra o LED CLIP real. Nenhuma proteção automática por sensores foi habilitada.
