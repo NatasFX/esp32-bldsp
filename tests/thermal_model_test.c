@@ -15,6 +15,10 @@ int main(void){
     assert(thermal_model_current(&s,17,4)<=4);
     thermal_model_t before=s;assert(!thermal_model_step(&s,17,4,true,6));assert(s.coil_delta==before.coil_delta);
     assert(!thermal_model_step(&s,NAN,4,true,1));
+    thermal_model_init_observed(&s,27.8,30,30);
+    assert(fabs(s.ntc_delta-2.2)<1e-9&&s.body_effect>1.9);
+    for(int i=0;i<120;i++)assert(thermal_model_step(&s,17,0,true,1));
+    assert(fabs(s.ambient+s.coil_delta-115.851)<.05);
     thermal_model_init(&s,27.86);for(int i=0;i<776;i++)assert(thermal_model_step(&s,11,0,true,1));assert(fabs(s.ambient+s.coil_delta-81.357)<.03);
     puts("thermal_model: frozen SciPy curves, current limit, cooling and invalid time checks passed");return 0;
 }

@@ -1,6 +1,12 @@
 #include "thermal_model.h"
 #include <math.h>
 void thermal_model_init(thermal_model_t *s,double ambient){*s=(thermal_model_t){.ambient=ambient};}
+void thermal_model_init_observed(thermal_model_t *s,double ambient,double coil,double ntc){
+    thermal_model_init(s,ambient);s->coil_delta=coil-ambient;s->ntc_delta=ntc-ambient;
+    // Initial sensor is assumed approximately stationary, not instantly at ambient.
+    // H is the body contribution, not measured frame temperature.
+    s->body_effect=fmax(0,s->ntc_delta-.12847667377287805*s->coil_delta);
+}
 double thermal_model_current(const thermal_model_t *s,double voltage,double limit){
     double r=3.596662911673227+.011856911913765731*(s->ambient+s->coil_delta-27.86);
     if(!isfinite(r)||r<=0||!isfinite(voltage)||voltage<0)return NAN;

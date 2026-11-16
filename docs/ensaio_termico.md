@@ -34,3 +34,7 @@ O dispositivo conserva apenas buffers limitados. Não aloca uma árvore JSON por
 ## Validação de implementação
 
 `tests/thermal_model_test.c` compara a integração RK4 em C com previsões congeladas de SciPy para 11 V, 17 V e 17 V limitado a 4 A; inclui resfriamento e rejeição de intervalo inválido. Demais testes nativos de EQ, fonte, RGB, telemetria e front permanecem aplicáveis. O teste físico de 17 V valida o modelo; esses testes de software validam a implementação das equações.
+
+## Ambiente e estados iniciais separados
+
+Atualização de 16/11: ambiente informado de 27,8 °C e NTC perto de 30 °C. O campo de ambiente é independente da média inicial do sensor. Hotspot inicial opcional; se ausente, bobina inicial aproximada pela média do NTC. O modelo inicia `n0 = Tntc0 − Ta` e `H0 = max(0, n0 − wc × (Tc0 − Ta))`, supondo o sensor aproximadamente estável. A diferença pode ter outras causas e não identifica sozinha a temperatura da estrutura. Os parâmetros congelados permanecem iguais. JSON e CSV exportam `initial_coil_c` e `initial_ntc_c`. [Previsões atualizadas](ensaios/20261116/multinode/atualizacao_ambiente278_ntc30.md).

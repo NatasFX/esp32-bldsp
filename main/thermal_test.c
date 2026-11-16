@@ -24,7 +24,7 @@ static trial_sample_t *samples;
 static struct {
     uint32_t id;uint64_t started,last_model,last_sensor;size_t count,capacity,event_count;
     uint8_t phase;bool recording,model_valid;double voltage,limit,ambient;
-    thermal_model_t model;trial_event_t events[EVENT_CAPACITY];char location[81];
+    double initial_coil,initial_ntc;thermal_model_t model;trial_event_t events[EVENT_CAPACITY];char location[81];
 } trial;
 static double rolling[10];static size_t rolling_count,rolling_head;
 static double latest_average=NAN;static uint64_t latest_at;
@@ -78,7 +78,7 @@ static cJSON *status_object(void){
     portENTER_CRITICAL(&lock);
     uint32_t id=trial.id;uint64_t start=trial.started,last=latest_at;size_t count=trial.count,capacity=trial.capacity,ec=trial.event_count,n=rolling_count;
     bool active=trial.recording,mvalid=trial.model_valid;unsigned phase=trial.phase;double v=trial.voltage,limit=trial.limit,ambient=trial.ambient,avg=latest_average;
-    double current_temperature=latest_temperature;thermal_model_t model=trial.model;char location[81];memcpy(location,trial.location,sizeof(location));
+    double current_temperature=latest_temperature,initial_coil=trial.initial_coil,initial_ntc=trial.initial_ntc;thermal_model_t model=trial.model;char location[81];memcpy(location,trial.location,sizeof(location));
     trial_sample_t sample={0};if(count)sample=samples[count-1];
     portEXIT_CRITICAL(&lock);
     uint64_t now=esp_timer_get_time()/1000;
@@ -93,6 +93,7 @@ static cJSON *status_object(void){
     num(o,"ntc_pred_c",count&&sample.ntc_pred!=INVALID_TEMP?sample.ntc_pred/100.:NAN);
     num(o,"body_effect_c",count&&mvalid?model.body_effect:NAN);num(o,"ambient_c",ambient);num(o,"source_v",v);num(o,"current_limit_a",limit);
     num(o,"model_current_a",count&&mvalid&&phase==HEATING?thermal_model_current(&model,v,limit):0);
+    num(o,"initial_coil_c",id?initial_coil:NAN);num(o,"initial_ntc_c",id?initial_ntc:NAN);
     cJSON_AddStringToObject(o,"reference_location",location);cJSON_AddNumberToObject(o,"free_heap_bytes",esp_get_free_heap_size());return o;
 }
 static esp_err_t status_get(httpd_req_t *r){return json_reply(r,status_object());}
@@ -107,8 +108,8 @@ static esp_err_t command(httpd_req_t *r){
     char body[513];int got=0;while(got<r->content_len){int n=httpd_req_recv(r,body+got,r->content_len-got);if(n<=0)return ESP_FAIL;got+=n;}body[got]=0;
     cJSON *o=cJSON_Parse(body),*a=cJSON_GetObjectItemCaseSensitive(o,"action");if(!cJSON_IsString(a)){cJSON_Delete(o);return failure(r,"400 Bad Request","Acao ausente");}
     char action[24];snprintf(action,sizeof(action),"%s",a->valuestring);
-    float v,i,coil,frame,ambient,limit;
-    bool valid=optional_number(o,"voltage",0,24,&v)&&optional_number(o,"current",0,10,&i)&&optional_number(o,"coil",-20,250,&coil)&&optional_number(o,"body",-20,200,&frame)&&optional_number(o,"ambient",0,60,&ambient)&&optional_number(o,"limit",0,10,&limit);
+    float v,i,coil,frame,ambient,limit,initial_coil;
+    bool valid=optional_number(o,"voltage",0,24,&v)&&optional_number(o,"current",0,10,&i)&&optional_number(o,"coil",-20,250,&coil)&&optional_number(o,"body",-20,200,&frame)&&optional_number(o,"ambient",0,60,&ambient)&&optional_number(o,"limit",0,10,&limit)&&optional_number(o,"initial_coil",0,200,&initial_coil);
     char location[81]="";cJSON *loc=cJSON_GetObjectItemCaseSensitive(o,"location");
     if(loc){if(!cJSON_IsString(loc)||strlen(loc->valuestring)>80||strpbrk(loc->valuestring,"\r\n"))valid=false;else strcpy(location,loc->valuestring);}
     cJSON_Delete(o);if(!valid)return failure(r,"400 Bad Request","Valor fora da faixa");
@@ -125,7 +126,8 @@ static esp_err_t command(httpd_req_t *r){
         if(trial.recording)err="Ensaio ja em andamento";
         else if(rolling_count<10||now-latest_at>2500)err="Aguarde 10 leituras validas do NTC";
         else{trial.id++;trial.started=trial.last_model=now;trial.count=trial.event_count=0;trial.phase=BASELINE;trial.recording=true;trial.model_valid=true;
-            trial.voltage=v;trial.limit=limit;trial.ambient=ambient;strcpy(trial.location,location);thermal_model_init(&trial.model,ambient);event_locked(now,0,v,limit,NAN,NAN);}
+            trial.voltage=v;trial.limit=limit;trial.ambient=ambient;trial.initial_ntc=latest_average;trial.initial_coil=isfinite(initial_coil)?initial_coil:latest_average;
+            strcpy(trial.location,location);thermal_model_init_observed(&trial.model,ambient,trial.initial_coil,trial.initial_ntc);event_locked(now,0,v,limit,(float)trial.initial_coil,NAN);}
     }else if(!trial.recording)err="Nenhum ensaio em andamento";
     else if(trial.event_count>=EVENT_CAPACITY-1&&strcmp(action,"finish"))err="Limite de marcacoes; encerre o registro";
     else if(!strcmp(action,"on")){
