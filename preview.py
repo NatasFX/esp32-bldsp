@@ -39,6 +39,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply({'temperature': {'status': 'unavailable', 'celsius': None},
                         'clip': {'status': 'uncalibrated', 'active': None},
                         'automatic_protection': False})
+        elif route == '/api/telemetry/history':
+            self.reply({'uptime_ms': 0, 'samples': [], 'events': [], 'storage': 'ram'})
         elif route == '/api/eq':
             try:
                 output = self.output()

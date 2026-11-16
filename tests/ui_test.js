@@ -13,6 +13,7 @@ const context=vm.createContext({URL,document,window:{addEventListener(){}},conso
   calls.push({url,opts});if(url==='/api/status')return {ok:true,json:async()=>({demo:true})};
   if(url==='/api/source/pulse')return {ok:true,json:async()=>({accepted:true,pulse_ms:100,demo:true})};
   if(url==='/api/telemetry')return {ok:true,json:async()=>({temperature:{status:'unavailable',celsius:null},clip:{status:'uncalibrated',active:null}})};
+  if(url==='/api/telemetry/history')return {ok:true,json:async()=>({uptime_ms:300000,samples:[{at_ms:298000,temperature_c:20},{at_ms:299000,temperature_c:null},{at_ms:300000,temperature_c:30}],events:[{at_ms:500,code:'started',detail:0},{at_ms:120000,code:'clip_on',detail:0}]})};
   const key=url.includes('stereo')?'stereo':'sub';
   if(opts?.method==='POST'){
    const words=JSON.parse(opts.body).words.slice();
@@ -72,6 +73,9 @@ function change(id,value){element(id).value=String(value);element('editor').inpu
  element('view-monitor').onclick();await settle();
  assert.equal(element('eq-view').hidden,true);assert.equal(element('monitor-view').hidden,false);
  assert.equal(element('monitor-temperature').textContent,'—');assert.equal(element('monitor-clip').textContent,'Sem leitura');
+ assert.equal(element('monitor-temp-min').textContent,'20,0 °C');assert.equal(element('monitor-temp-avg').textContent,'25,0 °C');assert.equal(element('monitor-temp-max').textContent,'30,0 °C');
+ assert.ok(element('monitor-events').textContent.includes('00:02:00 · LED CLIP acendeu'),'events from before page load must appear');
+ assert.equal((element('monitor-temp-path').d.match(/M/g)||[]).length,2,'missing samples create a gap');
  assert.equal(posts().length,beforeMonitorPosts);assert.equal(run('JSON.stringify(outputs.sub.draft)'),draftBefore);
  run("renderMonitor({temperature:{status:'estimated',celsius:32.4,resistance_ohm:7200,millivolts:1380},clip:{status:'ok',active:true,count:3}})");
  assert.equal(element('monitor-temperature').textContent,'32,4');assert.equal(element('monitor-clip').textContent,'CLIP detectado');

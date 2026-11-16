@@ -13,7 +13,7 @@ O termistor segue hipótese autorizada de 10 kΩ a 25 °C, Beta 3950. A convers�
 
 A aquisição ADC2 oneshot opera em tarefa local, com média de até quatro conversões por canal e ciclo nominal de 20 ms. Leituras com menos de duas conversões válidas, sem calibração de tensão ou vencidas não viram temperatura válida. Saturação e tensão fora da faixa de conversão são mostradas sem temperatura; não é diagnóstico infalível de sensor desconectado. Entrada flutuante pode produzir números plausíveis: montar os divisores antes de confiar nas leituras.
 
-GET `/api/telemetry` informa temperatura estimada/resistência/tensão/ADC, CLIP, referências e contagem. A interface consulta aproximadamente uma vez por segundo enquanto a aba está aberta. Trocar de aba não altera os EQs/presets nem interrompe a aquisição. Histórico: até cinco minutos em RAM do navegador, lacunas em leituras inválidas; eventos são da sessão.
+GET `/api/telemetry` informa temperatura estimada/resistência/tensão/ADC, CLIP, referências e contagem. A interface consulta aproximadamente uma vez por segundo enquanto a aba está aberta. Trocar de aba não altera os EQs/presets nem interrompe a aquisição. Histórico: 300 amostras (cadência nominal de 1 s) e os últimos 64 eventos em buffers circulares na RAM do ESP, coletados mesmo sem navegador. GET `/api/telemetry/history` entrega snapshot cronológico; a página carrega ao abrir e consulta novamente a cada 5 s. Reiniciar o ESP limpa esse histórico, mas não as referências de calibração em NVS. Lacunas de leitura permanecem lacunas no gráfico. Horários são relativos ao boot, sem presumir relógio real/NTP.
 
 ## Calibração óptica
 
@@ -32,3 +32,12 @@ Referência ADC2/Wi-Fi e erro de arbitragem: https://docs.espressif.com/projects
 Build completo ESP-IDF e testes C/JS passaram; firmware gravado na COM7 com hashes conferidos. ADC2 iniciou com Wi-Fi AP e USB ativos. Logs observaram GPIO17 em ~352–373 mV com conversões válidas e GPIO18 em 0 mV. Isto confirma aquisição, não montagem/calibração dos sensores. A conversão de temperatura recusa 0 mV e o CLIP permanece sem interpretação até obter referências válidas. EQs e seleção automática de fonte voltaram ao estado operacional. Layout em viewport móvel de 390 px foi renderizado e verificado sem overflow horizontal; testes exercitam abas, leituras ausentes, perda de conexão e preservação das edições de EQ.
 
 Usuário confirmou usar resistor pull-up de 10 kΩ em ambos. Permanecem pendentes validação física do NTC em temperatura de referência e calibração do LDR contra o LED CLIP real. Nenhuma proteção automática por sensores foi habilitada.
+
+
+## Histórico no ESP e gráfico técnico
+
+A janela de histórico deixou de depender da sessão do navegador. O buffer de amostras e eventos ocupa menos de 16 KiB, sobrescreve os registros mais antigos ao encher e não grava continuamente na flash. A resposta HTTP é transmitida em blocos, sem montar uma árvore JSON grande na RAM. A captura é copiada sob exclusão mútua e serializada fora da seção crítica.
+
+Eventos: início do monitoramento, CLIP acendendo/apagando, disponibilidade do NTC e LDR, captura das referências e falha inicial do ADC. Amostras incluem temperatura estimada ou ausência de leitura, tensão do LDR e estado filtrado de CLIP quando calibrado. A retenção visual de 2 s não é gravada como duração real do CLIP.
+
+O gráfico usa eixo Y numérico em °C com limites inferior/superior explícitos, média tracejada e estatísticas mínima/média/máxima das amostras válidas dos últimos 5 minutos. Amostras ausentes não são convertidas em zero nem entram na média. A escala é automática; seus limites não são alarmes térmicos. Reabrir a página, trocar de celular ou alternar abas preserva os dados que já estavam no ESP; desligar/reiniciar o ESP limpa os buffers.

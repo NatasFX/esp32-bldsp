@@ -1,5 +1,7 @@
 #include "telemetry.h"
 #include "telemetry_math.h"
+#include "monitor_log.h"
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "esp_adc/adc_oneshot.h"
@@ -18,13 +20,14 @@ static adc_oneshot_unit_handle_t adc;
 static adc_cali_handle_t calibration[2];
 static const adc_channel_t channels[]={ADC_CHANNEL_6,ADC_CHANNEL_7};
 static portMUX_TYPE mux=portMUX_INITIALIZER_UNLOCKED;
+static monitor_log_t history_log;
 static struct {
     int raw[2],mv[2];bool valid[2];int64_t sampled[2];
     int dark,lit;bool led_on;unsigned debounce,clips;int64_t last_clip;
 } readings={.dark=-1,.lit=-1};
 static bool calibrated_ldr(int dark,int lit){return dark>=0&&lit>=0&&dark-lit>=100;}
 static void sensor_task(void *arg) {
-    (void)arg;unsigned report=0;
+    (void)arg;unsigned report=0;int previous_ntc=-1,previous_ldr=-1;int64_t next_sample=0;
     while(1){
         for(int ch=0;ch<2;ch++){
             int sum=0,count=0;
@@ -33,6 +36,8 @@ static void sensor_task(void *arg) {
             bool valid=count>=2;
             if(valid&&calibration[ch]&&adc_cali_raw_to_voltage(calibration[ch],value,&mv)!=ESP_OK)mv=-1;
             int64_t now=esp_timer_get_time();bool edge=false;
+            double resistance=0,temperature=0;
+            bool temperature_valid=ch==1&&valid&&mv>=0&&telemetry_ntc_estimate(mv,&resistance,&temperature);
             portENTER_CRITICAL(&mux);
             readings.valid[ch]=valid;readings.raw[ch]=value;readings.mv[ch]=mv;
             if(valid)readings.sampled[ch]=now;
@@ -41,23 +46,33 @@ static void sensor_task(void *arg) {
                     int mid=(readings.dark+readings.lit)/2,hyst=(readings.dark-readings.lit)/10;
                     bool next=readings.led_on?value<mid+hyst:value<mid-hyst;
                     if(next!=readings.led_on){
-                        if(++readings.debounce>=2){readings.led_on=next;readings.debounce=0;if(next){readings.clips++;edge=true;}}
+                        if(++readings.debounce>=2){readings.led_on=next;readings.debounce=0;monitor_log_event(&history_log,now/1000,next?MONITOR_CLIP_ON:MONITOR_CLIP_OFF,0);if(next){readings.clips++;edge=true;}}
                     }else readings.debounce=0;
                     if(readings.led_on)readings.last_clip=now;
                 }else readings.debounce=0;
+                if(previous_ldr!=(int)valid){monitor_log_event(&history_log,now/1000,valid?MONITOR_LDR_VALID:MONITOR_LDR_INVALID,0);previous_ldr=valid;}
+            }else{
+                if(previous_ntc!=(int)temperature_valid){monitor_log_event(&history_log,now/1000,temperature_valid?MONITOR_NTC_VALID:MONITOR_NTC_INVALID,0);previous_ntc=temperature_valid;}
+                if(now>=next_sample){
+                    monitor_sample_t sample={.at_ms=now/1000,.temperature_c=(float)temperature,.temperature_valid=temperature_valid,
+                        .ldr_mv=readings.valid[0]?readings.mv[0]:-1,
+                        .clip=readings.valid[0]&&calibrated_ldr(readings.dark,readings.lit)?(int8_t)readings.led_on:-1};
+                    monitor_log_sample(&history_log,sample);next_sample=now+1000000;
+                }
             }
             portEXIT_CRITICAL(&mux);
             if(edge)ESP_LOGW("sensors","CLIP LED detected; no automatic gain intervention");
         }
         if(++report>=250){
-            portENTER_CRITICAL(&mux);__typeof__(readings) s=readings;portEXIT_CRITICAL(&mux);
-            ESP_LOGI("sensors","GPIO17 raw=%d mv=%d valid=%d; GPIO18 raw=%d mv=%d valid=%d; CLIP calibrated=%d count=%u",s.raw[0],s.mv[0],s.valid[0],s.raw[1],s.mv[1],s.valid[1],calibrated_ldr(s.dark,s.lit),s.clips);
+            portENTER_CRITICAL(&mux);__typeof__(readings) s=readings;size_t samples=history_log.sample_count,events=history_log.event_count;portEXIT_CRITICAL(&mux);
+            ESP_LOGI("sensors","GPIO17 raw=%d mv=%d valid=%d; GPIO18 raw=%d mv=%d valid=%d; CLIP calibrated=%d count=%u; history=%u events=%u",s.raw[0],s.mv[0],s.valid[0],s.raw[1],s.mv[1],s.valid[1],calibrated_ldr(s.dark,s.lit),s.clips,(unsigned)samples,(unsigned)events);
             report=0;
         }
         vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 void telemetry_start(void) {
+    monitor_log_event(&history_log,esp_timer_get_time()/1000,MONITOR_STARTED,0);
     nvs_handle_t store;
     if(nvs_open("sensors",NVS_READONLY,&store)==ESP_OK){
         int32_t value;if(nvs_get_i32(store,"ldr_dark",&value)==ESP_OK)readings.dark=value;
@@ -67,7 +82,7 @@ void telemetry_start(void) {
     }
     const adc_oneshot_unit_init_cfg_t unit={.unit_id=ADC_UNIT_2};
     esp_err_t err=adc_oneshot_new_unit(&unit,&adc);
-    if(err!=ESP_OK){ESP_LOGE("sensors","ADC2 unavailable: %s",esp_err_to_name(err));return;}
+    if(err!=ESP_OK){monitor_log_event(&history_log,esp_timer_get_time()/1000,MONITOR_ADC_ERROR,err);ESP_LOGE("sensors","ADC2 unavailable: %s",esp_err_to_name(err));return;}
     const adc_oneshot_chan_cfg_t config={.atten=ADC_ATTEN_DB_12,.bitwidth=ADC_BITWIDTH_12};
     for(int i=0;i<2;i++){
         err=adc_oneshot_config_channel(adc,channels[i],&config);
@@ -85,6 +100,42 @@ static esp_err_t send_json(httpd_req_t *r,cJSON *o){
     esp_err_t result=httpd_resp_sendstr(r,s);free(s);cJSON_Delete(o);return result;
 }
 static esp_err_t fail(httpd_req_t *r,const char *code,const char *message){httpd_resp_set_status(r,code);cJSON *o=cJSON_CreateObject();cJSON_AddStringToObject(o,"error",message);return send_json(r,o);}
+typedef struct {httpd_req_t *req;char bytes[1024];size_t used;esp_err_t error;} history_writer_t;
+static void history_flush(history_writer_t *w){
+    if(w->error==ESP_OK&&w->used)w->error=httpd_resp_send_chunk(w->req,w->bytes,w->used);
+    w->used=0;
+}
+static void history_write(history_writer_t *w,const char *text){
+    size_t n=strlen(text);if(w->error!=ESP_OK)return;
+    if(n>sizeof(w->bytes)){w->error=ESP_ERR_INVALID_SIZE;return;}
+    if(w->used+n>sizeof(w->bytes))history_flush(w);
+    if(w->error==ESP_OK){memcpy(w->bytes+w->used,text,n);w->used+=n;}
+}
+static esp_err_t history_get(httpd_req_t *r){
+    monitor_log_t *snapshot=malloc(sizeof(*snapshot));
+    if(!snapshot)return fail(r,"503 Service Unavailable","Memoria indisponivel para historico");
+    portENTER_CRITICAL(&mux);memcpy(snapshot,&history_log,sizeof(*snapshot));portEXIT_CRITICAL(&mux);
+    ESP_LOGI("sensors","Serving stored history: %u samples, %u events",(unsigned)snapshot->sample_count,(unsigned)snapshot->event_count);
+    httpd_resp_set_type(r,"application/json");httpd_resp_set_hdr(r,"Cache-Control","no-store");
+    history_writer_t writer={.req=r,.error=ESP_OK};char entry[192],temperature[32],ldr[16];
+    snprintf(entry,sizeof(entry),"{\"uptime_ms\":%llu,\"window_ms\":300000,\"sample_interval_ms\":1000,\"storage\":\"ram\",\"samples\":[",(unsigned long long)(esp_timer_get_time()/1000));
+    history_write(&writer,entry);
+    for(size_t i=0;i<snapshot->sample_count&&writer.error==ESP_OK;i++){
+        const monitor_sample_t *s=monitor_log_sample_at(snapshot,i);
+        if(s->temperature_valid)snprintf(temperature,sizeof(temperature),"%.2f",(double)s->temperature_c);else strcpy(temperature,"null");
+        if(s->ldr_mv>=0)snprintf(ldr,sizeof(ldr),"%d",s->ldr_mv);else strcpy(ldr,"null");
+        snprintf(entry,sizeof(entry),"%s{\"at_ms\":%llu,\"temperature_c\":%s,\"ldr_mv\":%s,\"clip\":%s}",i?",":"",(unsigned long long)s->at_ms,temperature,ldr,s->clip<0?"null":s->clip?"true":"false");
+        history_write(&writer,entry);
+    }
+    history_write(&writer,"],\"events\":[");
+    for(size_t i=0;i<snapshot->event_count&&writer.error==ESP_OK;i++){
+        const monitor_event_t *e=monitor_log_event_at(snapshot,i);
+        snprintf(entry,sizeof(entry),"%s{\"at_ms\":%llu,\"code\":\"%s\",\"detail\":%d}",i?",":"",(unsigned long long)e->at_ms,monitor_event_name(e->code),e->detail);
+        history_write(&writer,entry);
+    }
+    history_write(&writer,"]}");history_flush(&writer);free(snapshot);
+    return writer.error==ESP_OK?httpd_resp_send_chunk(r,NULL,0):writer.error;
+}
 static esp_err_t get(httpd_req_t *r) {
     portENTER_CRITICAL(&mux);__typeof__(readings) s=readings;portEXIT_CRITICAL(&mux);
     int64_t now=esp_timer_get_time();
@@ -120,11 +171,12 @@ static esp_err_t calibrate(httpd_req_t *r) {
     if(err!=ESP_OK)return fail(r,"500 Internal Server Error","Falha ao salvar calibracao");
     err=nvs_set_i32(store,dark?"ldr_dark":"ldr_lit",s.raw[0]);if(err==ESP_OK)err=nvs_commit(store);nvs_close(store);
     if(err!=ESP_OK)return fail(r,"500 Internal Server Error","Falha ao salvar calibracao");
-    portENTER_CRITICAL(&mux);readings.dark=new_dark;readings.lit=new_lit;readings.led_on=false;readings.last_clip=0;readings.debounce=0;portEXIT_CRITICAL(&mux);
+    portENTER_CRITICAL(&mux);readings.dark=new_dark;readings.lit=new_lit;readings.led_on=false;readings.last_clip=0;readings.debounce=0;monitor_log_event(&history_log,esp_timer_get_time()/1000,dark?MONITOR_CAL_OFF:MONITOR_CAL_ON,s.raw[0]);portEXIT_CRITICAL(&mux);
     ESP_LOGI("sensors","LDR reference %s=%d; calibrated=%d",dark?"off":"on",s.raw[0],calibrated_ldr(new_dark,new_lit));return get(r);
 }
 void telemetry_register(httpd_handle_t server){
     const httpd_uri_t read={.uri="/api/telemetry",.method=HTTP_GET,.handler=get};
     const httpd_uri_t cal={.uri="/api/telemetry/ldr",.method=HTTP_POST,.handler=calibrate};
-    ESP_ERROR_CHECK(httpd_register_uri_handler(server,&read));ESP_ERROR_CHECK(httpd_register_uri_handler(server,&cal));
+    const httpd_uri_t history={.uri="/api/telemetry/history",.method=HTTP_GET,.handler=history_get};
+    ESP_ERROR_CHECK(httpd_register_uri_handler(server,&read));ESP_ERROR_CHECK(httpd_register_uri_handler(server,&cal));ESP_ERROR_CHECK(httpd_register_uri_handler(server,&history));
 }

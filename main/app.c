@@ -46,6 +46,7 @@ static esp_err_t usb_error(httpd_req_t *r,esp_err_t err) {
 static esp_err_t root(httpd_req_t *r) {
     ESP_LOGI("http_eq","UI requested");
     httpd_resp_set_type(r,"text/html; charset=utf-8");
+    httpd_resp_set_hdr(r,"Cache-Control","no-store");
     return httpd_resp_send(r,(const char*)html_start,html_end-html_start-1);
 }
 static esp_err_t reply_eq(httpd_req_t *r,const uint16_t *w,bool matches) {

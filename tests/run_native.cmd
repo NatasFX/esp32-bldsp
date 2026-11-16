@@ -19,6 +19,10 @@ cl /nologo /std:c11 /W4 /I..\main telemetry_math_test.c ..\main\telemetry_math.c
 if errorlevel 1 exit /b 1
 telemetry_math_test.exe
 if errorlevel 1 exit /b 1
+cl /nologo /std:c11 /W4 /I..\main monitor_log_test.c ..\main\monitor_log.c /Fe:monitor_log_test.exe
+if errorlevel 1 exit /b 1
+monitor_log_test.exe
+if errorlevel 1 exit /b 1
 node ui_test.js
 if errorlevel 1 exit /b 1
 node response_test.js

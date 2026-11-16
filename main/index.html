@@ -14,6 +14,7 @@
 .eq-switch{position:relative;display:flex;align-items:center;gap:10px;padding:10px}.sync-indicator{display:grid;place-items:center;flex-shrink:0;width:28px;height:28px;min-width:28px;padding:3px;border:0;background:transparent;color:#75e0ba;border-radius:50%;cursor:pointer}.sync-indicator svg{width:21px;height:21px}.sync-indicator[data-state=pending]{color:#fbbf72}.sync-indicator[data-state=pending] svg{animation:sync-spin 1.2s linear infinite}.sync-indicator[data-state=error]{color:#fb7185}.sync-detail{position:absolute;right:0;top:calc(100% + 8px);width:min(300px,85vw);z-index:50;white-space:normal;padding:12px 14px;border:1px solid #40516c;border-radius:12px;background:#19243a;color:#dce6f6;font-size:12px;box-shadow:0 8px 24px #0008;line-height:1.5}.sync-detail[hidden]{display:none}@keyframes sync-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.sync-indicator[data-state=pending] svg{animation:none}}@media(max-width:360px){.page-head{gap:10px}.page-head h1{font-size:24px}}
 
 [hidden]{display:none!important}.app-tabs{display:flex;gap:6px;margin:18px 0 10px;padding:5px;background:#10192a;border:1px solid #2e3b53;border-radius:14px}.app-tabs button{flex:1;background:transparent;color:#aebbd0;padding:11px 8px;font-size:14px}.app-tabs button[aria-selected=true]{background:#26344b;color:#fff}.monitor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.monitor-card{padding:18px;background:#152037;border:1px solid #2e3b53;border-radius:16px;min-width:0}.monitor-card h2{font-size:14px;color:#b8c6dc;font-weight:500}.monitor-value{font-size:36px;font-weight:650;margin:16px 0 10px;font-variant-numeric:tabular-nums;letter-spacing:-1px}.monitor-value small{font-size:18px;color:#aebbd0}.monitor-badge{display:inline-block;font-size:11px;padding:5px 8px;border:1px solid #40516c;border-radius:20px;color:#bac8df}.monitor-badge[data-tone=warn]{color:#fbbf72;border-color:#8d693b}.monitor-badge[data-tone=danger]{color:#ff91a7;border-color:#98475c}.monitor-badge[data-tone=ok]{color:#75e0ba;border-color:#367c69}.monitor-card .mini{line-height:1.6;margin:10px 0 0}.monitor-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:20px 0 10px}.monitor-heading .mini{margin:0;font-size:11px}.monitor-plot{width:100%;height:170px;display:block;margin-top:14px}.monitor-plot line{stroke:#2e3b53;stroke-width:1}.monitor-plot path{stroke:#fbbf72;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round}.monitor-foot{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#91a3bf;margin-top:8px}.monitor-alert{padding:13px 15px;border:1px solid #7c5a35;background:#29251f;border-radius:12px;font-size:13px;color:#f4cf9e;line-height:1.5}.monitor-alert[data-tone=danger]{border-color:#98475c;background:#321e2b;color:#ffb2c2}.monitor-calibration{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.monitor-calibration button{font-size:12px;padding:10px;background:#243148;color:#e5e7eb}.monitor-events{white-space:pre-line;font-size:12px;line-height:1.8;color:#b8c6dc}.monitor-clip-value{font-size:27px;letter-spacing:-.5px}.monitor-note{font-size:12px;line-height:1.6;margin:12px 0;color:#91a3bf}@media(max-width:400px){.monitor-card{padding:13px}.monitor-value{font-size:30px}.monitor-clip-value{font-size:22px}}
+.monitor-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.monitor-stats div{padding:10px 6px;background:#10192a;border-radius:9px;text-align:center}.monitor-stats span{display:block;font-size:11px;color:#91a3bf}.monitor-stats strong{display:block;margin-top:7px;font-size:17px;font-variant-numeric:tabular-nums}.monitor-stat-mean strong{color:#75e0ba}.monitor-axis{fill:#91a3bf;font:11px system-ui}#monitor-temp-mean{stroke:#75e0ba;stroke-dasharray:5 4;stroke-width:1.5}.monitor-events{max-height:280px;overflow:auto}
 </style></head><body>
 <header class="page-head"><div><h1 id="page-title">Equalizador</h1><p class="intro">BLDSP · controle de áudio 2.1</p></div><div id="eq-switch" class="eq-switch"><label><input id="enabled" type="checkbox" disabled>EQ ativo</label><button id="sync-status" class="sync-indicator" type="button" data-state="pending" aria-label="Sincronizando" title="Sincronizando" aria-live="polite"></button><div id="status" class="sync-detail" role="status" aria-live="polite" hidden>Conectando…</div></div></header>
 <nav class="app-tabs" role="tablist" aria-label="Seções"><button id="view-eq" type="button" role="tab" aria-selected="true" aria-controls="eq-view">Equalizador</button><button id="view-monitor" type="button" role="tab" aria-selected="false" aria-controls="monitor-view">Monitoramento</button></nav>
@@ -47,9 +48,9 @@
   <section class="monitor-card"><h2>Temperatura · falante</h2><div class="monitor-value"><span id="monitor-temperature">—</span> <small>°C</small></div><span id="monitor-temp-state" class="monitor-badge" data-tone="warn">Sem leitura</span><p id="monitor-temp-electric" class="mini">NTC 10 kΩ · GPIO18</p></section>
   <section class="monitor-card"><h2>Clipping · amplificador</h2><div id="monitor-clip" class="monitor-value monitor-clip-value">Sem leitura</div><span id="monitor-clip-state" class="monitor-badge" data-tone="warn">A calibrar</span><p id="monitor-clip-electric" class="mini">LDR no LED CLIP · GPIO17</p></section>
  </div>
- <section class="monitor-card"><div class="monitor-heading" style="margin-top:0"><h2>Histórico de temperatura</h2><span class="mini">Últimos 5 minutos</span></div><svg class="monitor-plot" viewBox="0 0 600 170" preserveAspectRatio="none" role="img" aria-label="Histórico de temperatura do falante"><line x1="0" y1="20" x2="600" y2="20"/><line x1="0" y1="85" x2="600" y2="85"/><line x1="0" y1="150" x2="600" y2="150"/><path id="monitor-temp-path" d=""/></svg><div class="monitor-foot"><span id="monitor-temp-range">Aguardando temperatura</span><span id="monitor-temp-max">Máxima: —</span></div></section>
+ <section class="monitor-card"><div class="monitor-heading" style="margin-top:0"><h2>Temperatura · histórico do ESP</h2><span class="mini">Janela de 5 min</span></div><div class="monitor-stats"><div><span>Mínima</span><strong id="monitor-temp-min">—</strong></div><div class="monitor-stat-mean"><span>Média</span><strong id="monitor-temp-avg">—</strong></div><div><span>Máxima</span><strong id="monitor-temp-max">—</strong></div></div><svg class="monitor-plot" viewBox="0 0 360 190" preserveAspectRatio="none" role="img" aria-label="Histórico de temperatura em graus Celsius com limites inferior, superior e média"><text x="0" y="11" class="monitor-axis">°C</text><line x1="38" y1="20" x2="350" y2="20"/><line x1="38" y1="52.5" x2="350" y2="52.5"/><line x1="38" y1="85" x2="350" y2="85"/><line x1="38" y1="117.5" x2="350" y2="117.5"/><line x1="38" y1="150" x2="350" y2="150"/><text id="monitor-y0" class="monitor-axis" x="31" y="24" text-anchor="end">—</text><text id="monitor-y1" class="monitor-axis" x="31" y="56.5" text-anchor="end">—</text><text id="monitor-y2" class="monitor-axis" x="31" y="89" text-anchor="end">—</text><text id="monitor-y3" class="monitor-axis" x="31" y="121.5" text-anchor="end">—</text><text id="monitor-y4" class="monitor-axis" x="31" y="154" text-anchor="end">—</text><line id="monitor-temp-mean" x1="38" y1="85" x2="350" y2="85" visibility="hidden"/><path id="monitor-temp-path" d=""/><text class="monitor-axis" x="38" y="177">−5 min</text><text class="monitor-axis" x="194" y="177" text-anchor="middle">−2:30</text><text class="monitor-axis" x="350" y="177" text-anchor="end">Agora</text></svg><div class="monitor-foot"><span id="monitor-temp-range">Escala: —</span><span id="monitor-sample-count">0 amostras</span></div><p id="monitor-history-state" class="monitor-note">Carregando histórico do ESP…</p><p class="monitor-note">Escala automática · linha tracejada = média. Estes valores não são limites de proteção.</p></section>
  <section class="monitor-card" style="margin-top:12px"><h2>Calibração do LDR</h2><p class="monitor-note">Capture a leitura com o LED CLIP apagado e depois aceso. Não provoque clipping forte ou prolongado apenas para calibrar.</p><div class="monitor-calibration"><button id="monitor-cal-off" type="button">Capturar LED apagado</button><button id="monitor-cal-on" type="button">Capturar LED aceso</button></div><p id="monitor-cal-state" class="mini" role="status">As referências ficam salvas no ESP32.</p></section>
- <section class="monitor-card" style="margin-top:12px"><div class="monitor-heading" style="margin-top:0"><h2>Eventos</h2><span id="monitor-clip-count" class="mini">CLIP: —</span></div><div id="monitor-events" class="monitor-events">Nenhum evento registrado nesta sessão.</div></section>
+ <section class="monitor-card" style="margin-top:12px"><div class="monitor-heading" style="margin-top:0"><h2>Eventos</h2><span id="monitor-clip-count" class="mini">CLIP: —</span></div><div id="monitor-events" class="monitor-events">Carregando eventos do ESP…</div></section>
  <p class="monitor-note">Temperatura estimada pela curva NTC 10 kΩ / B3950. Mede o ponto onde o sensor está preso; não é a temperatura direta da bobina. Monitoramento sem redução automática de ganho.</p>
 </main>
 <script src="/eq-response.js"></script>
@@ -300,16 +301,29 @@ function flushOutputs(){
 }
 
 let currentView='eq',monitorTimer=null,monitorFetching=false,monitorGeneration=0,monitorCalibrating=false;
-const monitorHistory=[],monitorEvents=[];let lastClipCount=null;
+const monitorHistory=[];let lastHistoryFetch=0;
 function monitorBadge(id,text,tone='warn'){const el=$(id);el.textContent=text;el.setAttribute('data-tone',tone);}
-function monitorEvent(text){monitorEvents.unshift(new Date().toLocaleTimeString('pt-BR')+' · '+text);monitorEvents.length=Math.min(monitorEvents.length,20);$('monitor-events').textContent=monitorEvents.join('\n');}
-function monitorGraph(value){
- const now=Date.now();monitorHistory.push({time:now,value});while(monitorHistory.length&&monitorHistory[0].time<now-300000)monitorHistory.shift();if(monitorHistory.length>320)monitorHistory.shift();
- const values=monitorHistory.filter(p=>Number.isFinite(p.value));
- if(!values.length){$('monitor-temp-path').setAttribute('d','');$('monitor-temp-range').textContent='Aguardando temperatura';$('monitor-temp-max').textContent='Máxima: —';return;}
- const min=Math.floor(Math.min(...values.map(p=>p.value)))-1,max=Math.ceil(Math.max(...values.map(p=>p.value)))+1;
- let d='',connected=false;for(const point of monitorHistory){if(!Number.isFinite(point.value)){connected=false;continue;}const x=600*(point.time-(now-300000))/300000,y=150-130*(point.value-min)/(max-min);d+=(connected?' L':' M')+x.toFixed(1)+' '+y.toFixed(1);connected=true;}
- $('monitor-temp-path').setAttribute('d',d);$('monitor-temp-range').textContent=min+'–'+max+' °C';$('monitor-temp-max').textContent='Máxima: '+Math.max(...values.map(p=>p.value)).toFixed(1).replace('.',',')+' °C';
+function bootTime(ms){const sec=Math.floor(ms/1000);return [Math.floor(sec/3600),Math.floor(sec/60)%60,sec%60].map(n=>String(n).padStart(2,'0')).join(':');}
+function renderHistory(data){
+ if(!data||!Number.isFinite(data.uptime_ms)||!Array.isArray(data.samples)||!Array.isArray(data.events))throw Error('Histórico inválido');
+ const now=data.uptime_ms;monitorHistory.length=0;
+ for(const p of data.samples)if(Number.isFinite(p.at_ms)&&p.at_ms>=now-300000&&p.at_ms<=now)monitorHistory.push({time:p.at_ms,value:Number.isFinite(p.temperature_c)?p.temperature_c:null});
+ monitorGraph(now);
+ const names={started:'Monitoramento iniciado',clip_on:'LED CLIP acendeu',clip_off:'LED CLIP apagou',ntc_valid:'NTC: leitura válida',ntc_invalid:'NTC: leitura indisponível ou fora de faixa',ldr_valid:'LDR: leitura elétrica disponível',ldr_invalid:'LDR: leitura indisponível',cal_off:'LDR: referência de LED apagado salva',cal_on:'LDR: referência de LED aceso salva',adc_error:'Falha ao iniciar ADC'};
+ $('monitor-events').textContent=data.events.slice(-64).reverse().map(e=>bootTime(e.at_ms)+' · '+(names[e.code]||e.code)+(['cal_off','cal_on'].includes(e.code)?' · ADC '+e.detail:'')).join('\n')||'Nenhum evento registrado no ESP.';
+ $('monitor-history-state').textContent='Armazenado no ESP · relógio desde o boot '+bootTime(now)+' · RAM, até reiniciar';
+}
+function monitorGraph(now){
+ const values=monitorHistory.filter(p=>Number.isFinite(p.value)).map(p=>p.value),format=n=>n.toFixed(1).replace('.',',');
+ $('monitor-sample-count').textContent=values.length+' amostras válidas';
+ if(!values.length){$('monitor-temp-path').setAttribute('d','');$('monitor-temp-mean').setAttribute('visibility','hidden');$('monitor-temp-range').textContent='Escala: —';for(const name of ['min','avg','max'])$('monitor-temp-'+name).textContent='—';for(let i=0;i<5;i++)$('monitor-y'+i).textContent='—';return;}
+ const low=Math.min(...values),high=Math.max(...values),mean=values.reduce((a,b)=>a+b,0)/values.length;
+ const min=Math.floor((low-1)/5)*5,max=Math.ceil((high+1)/5)*5;
+ for(let i=0;i<5;i++)$('monitor-y'+i).textContent=format(max-i*(max-min)/4);
+ let d='',connected=false;for(const point of monitorHistory){if(!Number.isFinite(point.value)){connected=false;continue;}const x=38+312*(point.time-(now-300000))/300000,y=150-130*(point.value-min)/(max-min);d+=(connected?' L':' M')+x.toFixed(1)+' '+y.toFixed(1);connected=true;}
+ $('monitor-temp-path').setAttribute('d',d);const meanY=150-130*(mean-min)/(max-min);$('monitor-temp-mean').setAttribute('y1',meanY);$('monitor-temp-mean').setAttribute('y2',meanY);$('monitor-temp-mean').setAttribute('visibility','visible');
+ $('monitor-temp-range').textContent='Inferior '+format(min)+' · Superior '+format(max)+' °C';
+ $('monitor-temp-min').textContent=format(low)+' °C';$('monitor-temp-avg').textContent=format(mean)+' °C';$('monitor-temp-max').textContent=format(high)+' °C';
 }
 function renderMonitor(data){
  if(!data||!data.temperature||!data.clip)throw Error('Telemetria inválida');
@@ -323,18 +337,22 @@ function renderMonitor(data){
  monitorBadge('monitor-clip-state',clipKnown?(c.active?'Retenção de 2 s':'LED monitorado'):(c.status==='uncalibrated'?'Calibração pendente':'Sensor indisponível'),clipKnown?(c.active?'danger':'ok'):'warn');
  $('monitor-clip-electric').textContent='GPIO17 · '+electrical(c);
  $('monitor-clip-count').textContent='CLIP: '+(Number.isFinite(c.count)?c.count:'—');
- if(Number.isFinite(c.count)){if(lastClipCount!==null&&c.count>lastClipCount)monitorEvent('LED CLIP: '+(c.count-lastClipCount)+' ocorrência(s)');lastClipCount=c.count;}
  const refs=[];if(Number.isFinite(c.dark_reference))refs.push('apagado '+c.dark_reference);if(Number.isFinite(c.lit_reference))refs.push('aceso '+c.lit_reference);
  if(!monitorCalibrating)$('monitor-cal-state').textContent=refs.length?'Referências ADC: '+refs.join(' · '):'Capture as duas referências para habilitar a detecção.';
  monitorBadge('monitor-connection','ESP conectado','ok');
  const alert=$('monitor-alert');alert.setAttribute('data-tone',clipKnown&&c.active?'danger':'warn');
  alert.textContent=clipKnown&&c.active?'Clipping indicado pelo amplificador. Monitoramento não altera o ganho.':!validTemp?'Temperatura sem leitura válida. Confira o divisor resistivo e a ligação do NTC.':!clipKnown?'Temperatura estimada disponível. Calibre o LDR para acompanhar o LED CLIP.':'Sensores acompanhados. Temperatura estimada; proteção automática ainda desativada.';
- monitorGraph(validTemp?t.celsius:null);
 }
-function monitorUnavailable(){monitorBadge('monitor-connection','Sem conexão','warn');$('monitor-temperature').textContent='—';$('monitor-clip').textContent='Sem leitura';monitorBadge('monitor-temp-state','Sem leitura');monitorBadge('monitor-clip-state','Sem leitura');$('monitor-alert').textContent='Não foi possível atualizar os sensores. As leituras anteriores não representam o estado atual.';monitorGraph(null);}
+function monitorUnavailable(){monitorBadge('monitor-connection','Sem conexão','warn');$('monitor-temperature').textContent='—';$('monitor-clip').textContent='Sem leitura';monitorBadge('monitor-temp-state','Sem leitura');monitorBadge('monitor-clip-state','Sem leitura');$('monitor-alert').textContent='Não foi possível atualizar os sensores. As leituras anteriores não representam o estado atual.';$('monitor-history-state').textContent='Sem conexão; histórico exibido até a última atualização.';}
 async function pollMonitor(){
  if(currentView!=='monitor'||monitorFetching)return;monitorFetching=true;const generation=monitorGeneration;
- try{const data=await api('/api/telemetry');if(currentView==='monitor'&&generation===monitorGeneration)renderMonitor(data);}
+ try{
+  const data=await api('/api/telemetry');if(currentView==='monitor'&&generation===monitorGeneration)renderMonitor(data);
+  if(currentView==='monitor'&&generation===monitorGeneration&&Date.now()-lastHistoryFetch>=5000){
+   try{const history=await api('/api/telemetry/history');if(currentView==='monitor'&&generation===monitorGeneration){renderHistory(history);lastHistoryFetch=Date.now();}}
+   catch(e){if(currentView==='monitor'&&generation===monitorGeneration)$('monitor-history-state').textContent='Não foi possível atualizar o histórico do ESP.';}
+  }
+ }
  catch(e){if(currentView==='monitor'&&generation===monitorGeneration)monitorUnavailable();}
  finally{monitorFetching=false;if(currentView==='monitor')monitorTimer=setTimeout(pollMonitor,1000);}
 }
@@ -342,12 +360,12 @@ function selectView(view){
  currentView=view;monitorGeneration++;if(monitorTimer){clearTimeout(monitorTimer);monitorTimer=null;}
  $('eq-view').hidden=view!=='eq';$('monitor-view').hidden=view!=='monitor';$('eq-switch').hidden=view!=='eq';$('page-title').textContent=view==='eq'?'Equalizador':'Monitoramento';
  for(const key of ['eq','monitor'])$('view-'+key).setAttribute('aria-selected',String(key===view));
- if(view==='monitor')pollMonitor();else draw();
+ if(view==='monitor'){lastHistoryFetch=0;pollMonitor();}else draw();
 }
 $('view-eq').onclick=()=>selectView('eq');$('view-monitor').onclick=()=>selectView('monitor');
 async function calibrateMonitor(state){
  if(monitorCalibrating)return;monitorCalibrating=true;$('monitor-cal-off').disabled=true;$('monitor-cal-on').disabled=true;
- try{const data=await api('/api/telemetry/ldr',{state});monitorCalibrating=false;renderMonitor(data);$('monitor-cal-state').textContent='Referência salva no ESP32.';}
+ try{const data=await api('/api/telemetry/ldr',{state});monitorCalibrating=false;renderMonitor(data);lastHistoryFetch=0;$('monitor-cal-state').textContent='Referência salva no ESP32.';}
  catch(e){$('monitor-cal-state').textContent=e.message;}
  finally{monitorCalibrating=false;$('monitor-cal-off').disabled=false;$('monitor-cal-on').disabled=false;}
 }
