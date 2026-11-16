@@ -23,6 +23,10 @@ cl /nologo /std:c11 /W4 /I..\main monitor_log_test.c ..\main\monitor_log.c /Fe:m
 if errorlevel 1 exit /b 1
 monitor_log_test.exe
 if errorlevel 1 exit /b 1
+cl /nologo /std:c11 /W4 /I..\main thermal_model_test.c ..\main\thermal_model.c /Fe:thermal_model_test.exe
+if errorlevel 1 exit /b 1
+thermal_model_test.exe
+if errorlevel 1 exit /b 1
 node ui_test.js
 if errorlevel 1 exit /b 1
 node response_test.js

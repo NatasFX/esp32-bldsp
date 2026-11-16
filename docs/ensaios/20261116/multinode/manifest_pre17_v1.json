@@ -1,0 +1,21 @@
+{
+  "label": "pre17_v1",
+  "date_client": "2026-11-16",
+  "only_test_used": "Screen_Recording_20261116_140724_P2 Pro.mp4 at ~15V",
+  "sha256": {
+    "model_pre17_v1.json": "33921e5d6784226e5765de81ac0d5be6901d8dc772a9d9b91dca6aa65a119d4d",
+    "sensitivity_pre17_v1.json": "7fbc8b61aaa235fd12d67cbcd43824a9facd766d0693999d8dc1c6f2ed7a1389",
+    "electrical_fit_points.csv": "766e91a8944113eb4ddb135b2795c53661b6d0a7a576157d88c1988ce6e87d1d",
+    "estudo_pre17_v1.md": "3df3ddcc9ee2d0e7f3aa5081fcfa9a22e80922c11064635543fd7ae7965f3cb4",
+    "prediction_11V.csv": "c517838ee5157f7a2a83186004be990479c2d051469ca770ea8638d5eea535d7",
+    "prediction_15V.csv": "86428901408db50155a5dc1a72dbcdea956bf5510e80fb0bccbc29d1cdd422fd",
+    "prediction_17V.csv": "2a3b72c67790514c60d5748a1d641b9f526abee65e64026a069ad42d47677938",
+    "prediction_17V_limit4A.csv": "894cf1baf3c9d669ed73e40b50ccd747c39f18d8550a6d68e6dff7cde0f3e42b",
+    "prediction_bulk12000_11V.csv": "be508f564afac3ebc0b13d25dbe237f904ced3a834179c0955dec42d5681d4d9",
+    "prediction_bulk12000_17V.csv": "bd0a4f483c01eb9c1b65b3dfe08a81ffdc6abbe030cf8063dd9286e2870c6d5f",
+    "prediction_bulk4000_11V.csv": "e85145f2d77903d48c03371ecedce5db18ee97199c5364348778644abf94256f",
+    "prediction_bulk4000_17V.csv": "53eaf589a6511c51707d8a60a50cd78d02f4ed38a2acb0cd162273ad2b86302c",
+    "prediction_bulk7250_11V.csv": "6547961408dd6365536efad48efa09422f6130a69aee1f5f913ec6546039bc61",
+    "prediction_bulk7250_17V.csv": "2282ef54d5f9561b178f5dc5ce4d36fe21993d99ccd8c2986b7530b29ad68145"
+  }
+}

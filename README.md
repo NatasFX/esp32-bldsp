@@ -65,6 +65,16 @@ Usar a USB-UART para programar/depurar e reservar a USB nativa para a BLDSP. Fla
 
 Build completo e gravação no ESP32-S3 confirmados com ESP-IDF v5.4-dev instalado. USB HID, aplicação/leitura dos dois EQs, pré-ganho audível (confirmado pelo usuário) e troca automática de fonte via GPIO2 foram validados. [Registro de bancada](docs/primeiro_teste_esp32.md). Persistência e testes prolongados continuam pendentes. Nada foi gravado no firmware da BLDSP. A prévia da LAN é somente simulação.
 
+## Ensaio térmico
+
+Em `http://192.168.4.1/thermal-test`: média de dez leituras do NTC, previsão experimental separada, marcações da fonte e referências manuais, até 45 minutos em RAM e exportação CSV/JSON. A serial registra `THERMAL` a 1 Hz mesmo sem abrir a página. [Procedimento e API](docs/ensaio_termico.md), [estudo e previsões antes do teste de 17 V](docs/ensaios/20261116/multinode/estudo_pre17_v1.md). Sem proteção automática.
+
+Para converter o arquivo compartilhado do PuTTY em CSV durante o teste, sem abrir a COM7 novamente:
+
+```powershell
+python tools/thermal_log_to_csv.py serial-monitor.log build/thermal-live.csv
+```
+
 ## Prévia local
 
 Requer Python 3 e usa os arquivos deste repositório, sem depender do ACP Workbench:

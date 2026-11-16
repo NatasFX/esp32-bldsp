@@ -1,5 +1,6 @@
 #include "telemetry.h"
 #include "telemetry_math.h"
+#include "thermal_test.h"
 #include "monitor_log.h"
 #include <stdio.h>
 #include <string.h>
@@ -35,7 +36,7 @@ static void sensor_task(void *arg) {
             int value=count?sum/count:0,mv=-1;
             bool valid=count>=2;
             if(valid&&calibration[ch]&&adc_cali_raw_to_voltage(calibration[ch],value,&mv)!=ESP_OK)mv=-1;
-            int64_t now=esp_timer_get_time();bool edge=false;
+            int64_t now=esp_timer_get_time();bool edge=false,trial_due=false;
             double resistance=0,temperature=0;
             bool temperature_valid=ch==1&&valid&&mv>=0&&telemetry_ntc_estimate(mv,&resistance,&temperature);
             portENTER_CRITICAL(&mux);
@@ -59,9 +60,11 @@ static void sensor_task(void *arg) {
                         .ldr_mv=readings.valid[0]?readings.mv[0]:-1,
                         .clip=readings.valid[0]&&(readings.manual||calibrated_ldr(readings.dark,readings.lit))?(int8_t)readings.led_on:-1};
                     monitor_log_sample(&history_log,sample);next_sample=now+1000000;
+                    trial_due=true;
                 }
             }
             portEXIT_CRITICAL(&mux);
+            if(trial_due)thermal_test_sample(now/1000,temperature_valid,temperature,value,mv);
             if(edge)ESP_LOGW("sensors","CLIP LED detected; no automatic gain intervention");
         }
         if(++report>=250){

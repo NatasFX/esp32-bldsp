@@ -33,6 +33,17 @@ class Handler(BaseHTTPRequestHandler):
             self.reply((ROOT / 'main/index.html').read_text(encoding='utf-8'), mime='text/html; charset=utf-8')
         elif route == '/eq-response.js':
             self.reply((ROOT / 'main/eq-response.js').read_text(encoding='utf-8'), mime='application/javascript; charset=utf-8')
+        elif route == '/thermal-test':
+            self.reply((ROOT / 'main/thermal-test.html').read_text(encoding='utf-8'), mime='text/html; charset=utf-8')
+        elif route in ('/api/thermal-test', '/api/thermal-test/export'):
+            self.reply({'model_version': 'pre17_v1', 'storage': 'ram', 'session_id': 0,
+                        'uptime_ms': 0, 'start_ms': 0, 'phase': 'idle', 'recording': False,
+                        'model_valid': False, 'elapsed_ms': 0, 'samples': 0, 'capacity': 2700,
+                        'events': 0, 'event_capacity': 96, 'ntc_mean10_c': None, 'mean_count': 0,
+                        'ntc_c': None, 'coil_pred_c': None, 'ntc_pred_c': None, 'body_effect_c': None,
+                        'ambient_c': None, 'source_v': None, 'current_limit_a': None,
+                        'model_current_a': None, 'reference_location': '', 'free_heap_bytes': 0,
+                        'records': [], 'marks': []})
         elif route == '/api/status':
             self.reply({'demo': True})
         elif route == '/api/telemetry':
@@ -78,6 +89,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply({'accepted': True, 'pulse_ms': 100, 'demo': True}, 202)
             elif route == '/api/telemetry/ldr':
                 self.reply({'error': 'Calibre os sensores conectado ao ESP32 real.'}, 400)
+            elif route == '/api/thermal-test':
+                self.reply({'error': 'Conecte ao ESP32 para registrar o ensaio.'}, 400)
             else:
                 self.reply({'error': 'Not found'}, 404)
         except (ValueError, KeyError, TypeError):

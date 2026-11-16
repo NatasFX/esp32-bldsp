@@ -15,11 +15,18 @@
 #include "source_control.h"
 #include "status_led.h"
 #include "telemetry.h"
+#include "thermal_test.h"
 
 extern const unsigned char html_start[] asm("_binary_index_html_start");
 extern const unsigned char html_end[] asm("_binary_index_html_end");
 extern const unsigned char js_start[] asm("_binary_eq_response_js_start");
 extern const unsigned char js_end[] asm("_binary_eq_response_js_end");
+extern const unsigned char trial_start[] asm("_binary_thermal_test_html_start");
+extern const unsigned char trial_end[] asm("_binary_thermal_test_html_end");
+static esp_err_t trial_page(httpd_req_t *r){
+    httpd_resp_set_type(r,"text/html; charset=utf-8");httpd_resp_set_hdr(r,"Cache-Control","no-store");
+    return httpd_resp_send(r,(const char*)trial_start,trial_end-trial_start-1);
+}
 static esp_err_t script(httpd_req_t *r) {
     httpd_resp_set_type(r,"application/javascript; charset=utf-8");
     httpd_resp_set_hdr(r,"Cache-Control","no-store");
@@ -119,10 +126,11 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_wifi_start());
     dsp_usb_start();
     telemetry_start();
-    httpd_config_t cfg=HTTPD_DEFAULT_CONFIG();cfg.max_uri_handlers=12;cfg.stack_size=8192;cfg.recv_wait_timeout=5;cfg.send_wait_timeout=5;
+    httpd_config_t cfg=HTTPD_DEFAULT_CONFIG();cfg.max_uri_handlers=20;cfg.stack_size=8192;cfg.recv_wait_timeout=5;cfg.send_wait_timeout=5;
     httpd_handle_t server;ESP_ERROR_CHECK(httpd_start(&server,&cfg));
     const httpd_uri_t routes[]={
         {.uri="/",.method=HTTP_GET,.handler=root},
+        {.uri="/thermal-test",.method=HTTP_GET,.handler=trial_page},
         {.uri="/eq-response.js",.method=HTTP_GET,.handler=script},
         {.uri="/api/eq",.method=HTTP_GET,.handler=read_eq},
         {.uri="/api/eq",.method=HTTP_POST,.handler=apply_eq},
@@ -131,6 +139,7 @@ void app_main(void) {
     presets_register(server);
     source_control_register(server);
     telemetry_register(server);
+    thermal_test_register(server);
     status_led_system_ready();
     ESP_LOGI("bldsp", "Ready: Wi-Fi BLDSP-Control, http://192.168.4.1/; USB host waiting for DSP");
 }
