@@ -14,7 +14,7 @@ const context=vm.createContext({URL,document,window:{addEventListener(){}},conso
   if(url==='/api/source/pulse')return {ok:true,json:async()=>({accepted:true,pulse_ms:100,demo:true})};
   if(url==='/api/telemetry')return {ok:true,json:async()=>({temperature:{status:'unavailable',celsius:null},clip:{status:'uncalibrated',active:null}})};
   if(url==='/api/telemetry/history')return {ok:true,json:async()=>({uptime_ms:300000,samples:[{at_ms:298000,temperature_c:20},{at_ms:299000,temperature_c:null},{at_ms:300000,temperature_c:30}],events:[{at_ms:500,code:'started',detail:0},{at_ms:120000,code:'clip_on',detail:0}]})};
-  if(url==='/api/telemetry/ldr/capture')return {ok:true,json:async()=>({uptime_ms:5000,samples:[{at_ms:3000,raw:2000},{at_ms:4000,raw:300},{at_ms:5000,raw:2100}]})};
+  if(url==='/api/telemetry/ldr/capture')return {ok:true,json:async()=>({uptime_ms:5000,threshold:2600,samples:[{at_ms:3000,raw:2000},{at_ms:4000,raw:300},{at_ms:5000,raw:2100}]})};
   if(url==='/api/telemetry/ldr'&&opts?.method==='POST')return {ok:true,json:async()=>({temperature:{status:'estimated',celsius:25},clip:{status:'provisional',manual:true,threshold:JSON.parse(opts.body).threshold,raw:2000,active:false}})};
   const key=url.includes('stereo')?'stereo':'sub';
   if(opts?.method==='POST'){
@@ -79,17 +79,22 @@ function change(id,value){element(id).value=String(value);element('editor').inpu
  assert.ok(element('monitor-events').textContent.includes('00:02:00 · LED CLIP acendeu'),'events from before page load must appear');
  assert.equal(posts().length,beforeMonitorPosts);
  assert.equal(calls.filter(c=>c.url==='/api/telemetry/ldr/capture').length,0,'RAW capture must be manual');
- element('monitor-limit').value='450';await element('monitor-raw-refresh').onclick();
+ await element('monitor-raw-refresh').onclick();
  assert.ok(element('monitor-raw-extremes').textContent.includes('Mín: 300 · Máx: 2100'));
+ assert.ok(element('monitor-raw-range').textContent.includes('80% da média: 2600'));
  const frozenRaw=element('monitor-raw-path').d;
- element('monitor-limit-slider').value='600';element('monitor-limit-slider').oninput();
- assert.equal(Number(element('monitor-limit').value),600);assert.equal(element('monitor-raw-path').d,frozenRaw,'threshold editing must not refresh samples');
- await element('monitor-limit-save').onclick();assert.equal(JSON.parse(calls.at(-1).opts.body).threshold,600);
+ run("renderMonitor({temperature:{status:'estimated',celsius:25},clip:{status:'warming_up',baseline_raw:4000,active:null,count:0}})");
+ assert.equal(element('monitor-raw-path').d,frozenRaw,'live polling must preserve the frozen capture');
+ assert.ok(element('monitor-cal-state').textContent.includes('um minuto'));
  assert.equal((element('monitor-temp-path').d.match(/M/g)||[]).length,2,'missing samples create a gap');
  assert.equal(run('JSON.stringify(outputs.sub.draft)'),draftBefore);
  run("renderMonitor({temperature:{status:'estimated',celsius:32.4,resistance_ohm:7200,millivolts:1380},clip:{status:'ok',active:true,count:3}})");
  assert.equal(element('monitor-temperature').textContent,'32,4');assert.equal(element('monitor-clip').textContent,'CLIP detectado');
- run('monitorUnavailable()');assert.equal(element('monitor-temperature').textContent,'—');assert.equal(element('monitor-clip').textContent,'Sem leitura');
+ run("renderMonitor({temperature:{status:'estimated',celsius:32.4},coil:{status:'estimated',celsius:110.5,ntc_mean10_c:32.1,ambient_c:27.8},clip:{status:'ok',active:false}})");
+ assert.equal(element('monitor-coil').textContent,'110,5');assert.equal(Number(element('monitor-ambient').value),27.8);
+ run("renderMonitor({temperature:{status:'estimated',celsius:32.4},coil:{status:'warming_up',celsius:null},clip:{status:'ok',active:false}})");
+ assert.equal(element('monitor-coil').textContent,'—');
+ run('monitorUnavailable()');assert.equal(element('monitor-coil').textContent,'—');assert.equal(element('monitor-temperature').textContent,'—');assert.equal(element('monitor-clip').textContent,'Sem leitura');
  element('view-eq').onclick();assert.equal(element('monitor-view').hidden,true);assert.equal(element('eq-view').hidden,false);
  console.log('UI: preset-1 boot, automatic two-output apply, coalescing, invalid-edit suppression, in-flight latest-wins, toggles, Q, double tap, volume, preset save isolation and reset OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});

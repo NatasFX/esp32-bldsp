@@ -13,7 +13,10 @@ int main(void) {
     s.bootstrap_error=true;assert(status_visual_kind(&s)==LED_ERROR);s.bootstrap_error=false;
     s.usb_present=false;assert(status_visual_kind(&s)==LED_WAIT_USB);
     s.usb_present=true;assert(status_visual_kind(&s)==LED_READY);
-    for(int kind=LED_BOOT;kind<=LED_READY;kind++)for(unsigned ms=0;ms<12000;ms++) {
+    s.clip=true;assert(status_visual_kind(&s)==LED_CLIP);s.clip=false;
+    status_rgb_t clip_on=status_visual_color(LED_CLIP,0),clip_off=status_visual_color(LED_CLIP,125);
+    assert(clip_on.r==128&&clip_on.g==0&&clip_on.b==0&&clip_off.r==0);
+    for(int kind=LED_BOOT;kind<=LED_CLIP;kind++)for(unsigned ms=0;ms<12000;ms++) {
         status_rgb_t c=status_visual_color((status_kind_t)kind,ms);
         assert(c.r<=128 && c.g<=128 && c.b<=128);
     }

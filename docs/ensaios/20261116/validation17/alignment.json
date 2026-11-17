@@ -1,0 +1,7 @@
+{
+  "video_to_esp_uptime_offset_s": 275.4109530636145,
+  "display_alignment_rmse_c": 0.29160643666915614,
+  "median_abs_error_c": 0.03879527951617945,
+  "display_samples": 1373,
+  "note": "Constant offset from NTC displayed mean vs serial mean10; browser refresh introduces subsecond jitter. No thermal model used."
+}

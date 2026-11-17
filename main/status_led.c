@@ -10,12 +10,19 @@
 static portMUX_TYPE state_lock=portMUX_INITIALIZER_UNLOCKED;
 static status_snapshot_t state;
 static unsigned requests,error_modules;
-static uint64_t services_ready_ms;
+static uint64_t services_ready_ms,clip_until_ms;
+#define CLIP_INDICATOR_HOLD_MS 2000u
 static rmt_channel_handle_t channel;
 static rmt_encoder_handle_t encoder;
 // Persistent payload: never reused before the TX completion or channel disable.
 static rmt_symbol_word_t symbols[25];
 
+void status_led_clip(bool active) {
+    if (!active) return;
+    portENTER_CRITICAL(&state_lock);
+    clip_until_ms = (uint64_t)esp_timer_get_time() / 1000 + CLIP_INDICATOR_HOLD_MS;
+    portEXIT_CRITICAL(&state_lock);
+}
 void status_led_system_ready(void){
     portENTER_CRITICAL(&state_lock);
     if(!state.system_ready)services_ready_ms=(uint64_t)esp_timer_get_time()/1000;
@@ -60,9 +67,9 @@ static esp_err_t write_color(status_rgb_t c) {
 }
 static void led_task(void *arg) {
     (void)arg;int previous=-1;bool indicators_started=false;
-    const char *names[]={"boot blue","waiting USB amber","switching source purple","sync cyan","error red","operational rainbow"};
+    const char *names[]={"boot blue","waiting USB amber","switching source purple","sync cyan","error red","operational rainbow","CLIP red blink"};
     while(1){
-        portENTER_CRITICAL(&state_lock);status_snapshot_t snapshot=state;uint64_t ready_ms=services_ready_ms;portEXIT_CRITICAL(&state_lock);
+        portENTER_CRITICAL(&state_lock);status_snapshot_t snapshot=state;uint64_t ready_ms=services_ready_ms;snapshot.clip=(uint64_t)esp_timer_get_time()/1000<clip_until_ms;portEXIT_CRITICAL(&state_lock);
         uint64_t now_ms=(uint64_t)esp_timer_get_time()/1000;
         if(!snapshot.system_ready || now_ms-ready_ms<3000){vTaskDelay(pdMS_TO_TICKS(40));continue;}
         if(!indicators_started){ESP_LOGI("status_led","Startup delay complete; enabling RGB indicators gradually");indicators_started=true;}

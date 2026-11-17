@@ -8,10 +8,11 @@ LED endereçável da placa no **GPIO48**, confirmado pelo usuário. Ao iniciar o
 | Amarelo com respiração | Sem BLDSP USB reconhecida |
 | Roxo com respiração | BLDSP em áudio USB; aguardando troca para Bluetooth/HID |
 | Ciano com respiração | Bootstrap/aplicação de EQ ainda pendente ou requisição de ajuste em execução |
+| Vermelho rápido (4 Hz) | CLIP confirmado pelo detector; retenção visual de 2 s após o evento |
 | Vermelho piscando lentamente | Falha de troca de fonte, bootstrap ou confirmação de EQ |
 | Arco-íris suave (ciclo ~5,12 s) | Serviços iniciados, USB presente em 171E e preset/EQs confirmados, sem operação pendente ou erro conhecido |
 
-O arco-íris não exige celular conectado ao Wi-Fi. Também não confirma conexão Bluetooth do celular, presença de música, funcionamento do amplificador ou sensores futuros: esses sinais não são medidos pelo firmware atual.
+O arco-íris não exige celular conectado ao Wi-Fi. Também não confirma conexão Bluetooth do celular, presença de música, funcionamento do amplificador ou ausência de CLIP: use os indicadores de monitoramento para os sensores.
 
 Desconectar o USB tira o LED de operacional. Falhas de aplicação são mantidas por saída até uma confirmação válida dessa saída ou reinicialização da conexão USB; confirmar a outra saída não apaga o erro. Falha transitória no bootstrap pode aparecer em vermelho antes da tentativa seguinte ter sucesso. Fonte em 1719 fica roxa; após esgotar tentativas, vermelha.
 
@@ -41,3 +42,7 @@ O vermelho transitório correspondeu a divergência da primeira leitura do módu
 Usuário relatou suspeita de brownout na partida. Alterado para quadro RGB zero imediato na inicialização do driver, retenção apagado até 3 s após serviços prontos e rampa de 1 s até o brilho configurado. Testes C cobrem ausência de luz antes do prazo, início em zero e rampa até o limite. Nos logs disponíveis havia resets POWERON, sem mensagem explícita de brownout; causa elétrica não confirmada. A mudança reduz a iluminação durante a partida, mas não valida por si só a fonte de alimentação.
 
 Validação após gravação na COM7: quadro preto registrado em 446 ms de boot, serviços prontos em 686 ms e liberação gradual dos indicadores em 3696 ms (3010 ms depois). Troca automática de fonte e confirmação dos dois EQs continuaram funcionando; estado operacional rainbow em 7496 ms. Nenhuma mensagem explícita de brownout nessa captura. O teste foi por reset serial, não substitui ensaio de desligar/ligar a alimentação realizado pelo usuário.
+
+## CLIP e prioridade
+
+O detector de pulsos chama `status_led_clip` após confirmação, e eventos sustentados renovam o prazo. A retenção de 2 s torna pulsos curtos visíveis; não aumenta a duração gravada do evento. Atraso inicial e erros do controle USB mantêm sua prioridade. Sem CLIP ou erro pendente, volta ao estado normal. Brilho máximo continua em 128/255. [Regras de detecção](clip_relativo.md).

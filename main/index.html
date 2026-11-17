@@ -18,7 +18,7 @@
 #monitor-raw-path{stroke:#75e0ba}#monitor-raw-limit-line{stroke:#fbbf72;stroke-dasharray:5 4;stroke-width:1.5}
 </style></head><body>
 <header class="page-head"><div><h1 id="page-title">Equalizador</h1><p class="intro">BLDSP · controle de áudio 2.1</p></div><div id="eq-switch" class="eq-switch"><label><input id="enabled" type="checkbox" disabled>EQ ativo</label><button id="sync-status" class="sync-indicator" type="button" data-state="pending" aria-label="Sincronizando" title="Sincronizando" aria-live="polite"></button><div id="status" class="sync-detail" role="status" aria-live="polite" hidden>Conectando…</div></div></header>
-<nav class="app-tabs" role="tablist" aria-label="Seções"><button id="view-eq" type="button" role="tab" aria-selected="true" aria-controls="eq-view">Equalizador</button><button id="view-monitor" type="button" role="tab" aria-selected="false" aria-controls="monitor-view">Monitoramento</button><a href="/thermal-test" style="flex:1;text-align:center;padding:11px 5px;font-size:13px;color:#aebbd0;text-decoration:none">Ensaio térmico</a></nav>
+<nav class="app-tabs" role="tablist" aria-label="Seções"><button id="view-eq" type="button" role="tab" aria-selected="true" aria-controls="eq-view">Equalizador</button><button id="view-monitor" type="button" role="tab" aria-selected="false" aria-controls="monitor-view">Monitoramento</button></nav>
 <main id="eq-view" role="tabpanel" aria-labelledby="view-eq">
 <nav class="tabs" role="tablist" aria-label="Saída de áudio"><button id="tab-stereo" role="tab" aria-selected="false">Estéreo · L + R</button><button id="tab-sub" role="tab" aria-selected="true">Subwoofer</button></nav>
 <section class="presets"><div class="preset-buttons" role="group" aria-label="Presets"><button id="preset-1" type="button" aria-pressed="true">1</button><button id="preset-2" type="button" aria-pressed="false">2</button><button id="preset-3" type="button" aria-pressed="false">3</button><button id="preset-4" type="button" aria-pressed="false">4</button></div><div class="preset-footer"><span class="mini">Presets · estéreo + sub</span><button id="preset-save" disabled>Salvar preset</button><button id="preset-reset" class="secondary" disabled>Reset</button></div></section>
@@ -46,13 +46,15 @@
  <div class="monitor-heading"><h2>Falante e amplificador</h2><span id="monitor-connection" class="monitor-badge">Aguardando ESP</span></div>
  <div id="monitor-alert" class="monitor-alert">Aguardando as primeiras leituras dos sensores.</div>
  <div class="monitor-grid">
-  <section class="monitor-card"><h2>Temperatura · falante</h2><div class="monitor-value"><span id="monitor-temperature">—</span> <small>°C</small></div><span id="monitor-temp-state" class="monitor-badge" data-tone="warn">Sem leitura</span><p id="monitor-temp-electric" class="mini">NTC 10 kΩ · GPIO18</p></section>
+  <section class="monitor-card"><h2>NTC · temperatura lida</h2><div class="monitor-value"><span id="monitor-temperature">—</span> <small>°C</small></div><span id="monitor-temp-state" class="monitor-badge" data-tone="warn">Sem leitura</span><p id="monitor-temp-electric" class="mini">NTC 10 kΩ · GPIO18</p></section>
+  <section class="monitor-card"><h2>Bobina · estimada</h2><div class="monitor-value"><span id="monitor-coil">—</span> <small>°C</small></div><span id="monitor-coil-state" class="monitor-badge" data-tone="warn">Aguardando NTC</span><p id="monitor-coil-detail" class="mini">Modelo v2 · sem leitura de potência</p></section>
   <section class="monitor-card"><h2>Clipping · amplificador</h2><div id="monitor-clip" class="monitor-value monitor-clip-value">Sem leitura</div><span id="monitor-clip-state" class="monitor-badge" data-tone="warn">A calibrar</span><p id="monitor-clip-electric" class="mini">LDR no LED CLIP · GPIO17</p></section>
  </div>
- <section class="monitor-card"><div class="monitor-heading" style="margin-top:0"><h2>Temperatura · histórico do ESP</h2><span class="mini">Janela de 5 min</span></div><div class="monitor-stats"><div><span>Mínima</span><strong id="monitor-temp-min">—</strong></div><div class="monitor-stat-mean"><span>Média</span><strong id="monitor-temp-avg">—</strong></div><div><span>Máxima</span><strong id="monitor-temp-max">—</strong></div></div><svg class="monitor-plot" viewBox="0 0 360 190" preserveAspectRatio="none" role="img" aria-label="Histórico de temperatura em graus Celsius com limites inferior, superior e média"><text x="0" y="11" class="monitor-axis">°C</text><line x1="38" y1="20" x2="350" y2="20"/><line x1="38" y1="52.5" x2="350" y2="52.5"/><line x1="38" y1="85" x2="350" y2="85"/><line x1="38" y1="117.5" x2="350" y2="117.5"/><line x1="38" y1="150" x2="350" y2="150"/><text id="monitor-y0" class="monitor-axis" x="31" y="24" text-anchor="end">—</text><text id="monitor-y1" class="monitor-axis" x="31" y="56.5" text-anchor="end">—</text><text id="monitor-y2" class="monitor-axis" x="31" y="89" text-anchor="end">—</text><text id="monitor-y3" class="monitor-axis" x="31" y="121.5" text-anchor="end">—</text><text id="monitor-y4" class="monitor-axis" x="31" y="154" text-anchor="end">—</text><line id="monitor-temp-mean" x1="38" y1="85" x2="350" y2="85" visibility="hidden"/><path id="monitor-temp-path" d=""/><text class="monitor-axis" x="38" y="177">−5 min</text><text class="monitor-axis" x="194" y="177" text-anchor="middle">−2:30</text><text class="monitor-axis" x="350" y="177" text-anchor="end">Agora</text></svg><div class="monitor-foot"><span id="monitor-temp-range">Escala: —</span><span id="monitor-sample-count">0 amostras</span></div><p id="monitor-history-state" class="monitor-note">Carregando histórico do ESP…</p><p class="monitor-note">Escala automática · linha tracejada = média. Estes valores não são limites de proteção.</p></section>
- <section class="monitor-card" style="margin-top:12px"><div class="monitor-heading" style="margin-top:0"><h2>RAW do LDR · últimos 2 s</h2><button id="monitor-raw-refresh" class="secondary" type="button" style="font-size:12px;padding:9px">Atualizar captura</button></div><svg class="monitor-plot" viewBox="0 0 360 190" preserveAspectRatio="none" role="img" aria-label="Captura congelada de dois segundos do RAW do LDR e limiar de CLIP"><line x1="38" y1="20" x2="350" y2="20"/><line x1="38" y1="52.5" x2="350" y2="52.5"/><line x1="38" y1="85" x2="350" y2="85"/><line x1="38" y1="117.5" x2="350" y2="117.5"/><line x1="38" y1="150" x2="350" y2="150"/><text id="monitor-raw-y0" class="monitor-axis" x="31" y="24" text-anchor="end">4095</text><text id="monitor-raw-y1" class="monitor-axis" x="31" y="56.5" text-anchor="end">3071</text><text id="monitor-raw-y2" class="monitor-axis" x="31" y="89" text-anchor="end">2048</text><text id="monitor-raw-y3" class="monitor-axis" x="31" y="121.5" text-anchor="end">1024</text><text class="monitor-axis" x="31" y="154" text-anchor="end">0</text><rect id="monitor-raw-zone" x="38" y="150" width="312" height="0" fill="#fb718522"/><line id="monitor-raw-limit-line" x1="38" y1="135" x2="350" y2="135"/><path id="monitor-raw-path" d=""/><text class="monitor-axis" x="38" y="177">−2 s</text><text class="monitor-axis" x="194" y="177" text-anchor="middle">−1 s</text><text class="monitor-axis" x="350" y="177" text-anchor="end">Captura</text></svg><p id="monitor-raw-state" class="mini" role="status">Clique em Atualizar captura para buscar os últimos 2 segundos do ESP.</p><div class="monitor-foot"><span id="monitor-raw-range">RAW · escala 0–4095</span><span id="monitor-raw-extremes">Mín: — · Máx: —</span></div><label class="monitor-note">Limiar na escala do gráfico<input id="monitor-limit-slider" type="range" min="1" max="4075" step="1" value="450"></label><h2 style="margin-top:18px">Detecção de CLIP</h2><p class="monitor-note">Limiar manual provisório: indica CLIP abaixo do RAW definido. Salvar ativa o modo manual; capturar as duas referências ativa a calibração óptica.</p><div class="monitor-calibration"><label style="flex:1;min-width:130px;font-size:12px">Limiar RAW<input id="monitor-limit" type="number" min="1" max="4075" step="1" value="450" style="width:100%;padding:10px;background:#10192a;color:#fff;border:1px solid #40516c;border-radius:8px"></label><button id="monitor-limit-save" type="button" style="align-self:end">Salvar limiar</button></div><p class="monitor-note">Capture a leitura com o LED CLIP apagado e depois aceso. Não provoque clipping forte ou prolongado apenas para calibrar.</p><div class="monitor-calibration"><button id="monitor-cal-off" type="button">Capturar LED apagado</button><button id="monitor-cal-on" type="button">Capturar LED aceso</button></div><p id="monitor-cal-state" class="mini" role="status">As referências ficam salvas no ESP32.</p></section>
+ <section class="monitor-card"><div class="monitor-heading" style="margin-top:0"><h2>NTC · histórico do ESP</h2><span class="mini">Janela de 5 min</span></div><div class="monitor-stats"><div><span>Mínima</span><strong id="monitor-temp-min">—</strong></div><div class="monitor-stat-mean"><span>Média</span><strong id="monitor-temp-avg">—</strong></div><div><span>Máxima</span><strong id="monitor-temp-max">—</strong></div></div><svg class="monitor-plot" viewBox="0 0 360 190" preserveAspectRatio="none" role="img" aria-label="Histórico de temperatura em graus Celsius com limites inferior, superior e média"><text x="0" y="11" class="monitor-axis">°C</text><line x1="38" y1="20" x2="350" y2="20"/><line x1="38" y1="52.5" x2="350" y2="52.5"/><line x1="38" y1="85" x2="350" y2="85"/><line x1="38" y1="117.5" x2="350" y2="117.5"/><line x1="38" y1="150" x2="350" y2="150"/><text id="monitor-y0" class="monitor-axis" x="31" y="24" text-anchor="end">—</text><text id="monitor-y1" class="monitor-axis" x="31" y="56.5" text-anchor="end">—</text><text id="monitor-y2" class="monitor-axis" x="31" y="89" text-anchor="end">—</text><text id="monitor-y3" class="monitor-axis" x="31" y="121.5" text-anchor="end">—</text><text id="monitor-y4" class="monitor-axis" x="31" y="154" text-anchor="end">—</text><line id="monitor-temp-mean" x1="38" y1="85" x2="350" y2="85" visibility="hidden"/><path id="monitor-temp-path" d=""/><text class="monitor-axis" x="38" y="177">−5 min</text><text class="monitor-axis" x="194" y="177" text-anchor="middle">−2:30</text><text class="monitor-axis" x="350" y="177" text-anchor="end">Agora</text></svg><div class="monitor-foot"><span id="monitor-temp-range">Escala: —</span><span id="monitor-sample-count">0 amostras</span></div><p id="monitor-history-state" class="monitor-note">Carregando histórico do ESP…</p><p class="monitor-note">Escala automática · linha tracejada = média. Estes valores não são limites de proteção.</p></section>
+ <section class="monitor-card" style="margin-top:12px"><div class="monitor-heading" style="margin-top:0"><h2>RAW do LDR · últimos 2 s</h2><button id="monitor-raw-refresh" class="secondary" type="button" style="font-size:12px;padding:9px">Atualizar captura</button></div><svg class="monitor-plot" viewBox="0 0 360 190" preserveAspectRatio="none" role="img" aria-label="Captura congelada de dois segundos do RAW do LDR e limiar de CLIP"><line x1="38" y1="20" x2="350" y2="20"/><line x1="38" y1="52.5" x2="350" y2="52.5"/><line x1="38" y1="85" x2="350" y2="85"/><line x1="38" y1="117.5" x2="350" y2="117.5"/><line x1="38" y1="150" x2="350" y2="150"/><text id="monitor-raw-y0" class="monitor-axis" x="31" y="24" text-anchor="end">4095</text><text id="monitor-raw-y1" class="monitor-axis" x="31" y="56.5" text-anchor="end">3071</text><text id="monitor-raw-y2" class="monitor-axis" x="31" y="89" text-anchor="end">2048</text><text id="monitor-raw-y3" class="monitor-axis" x="31" y="121.5" text-anchor="end">1024</text><text class="monitor-axis" x="31" y="154" text-anchor="end">0</text><rect id="monitor-raw-zone" x="38" y="150" width="312" height="0" fill="#fb718522"/><line id="monitor-raw-limit-line" x1="38" y1="135" x2="350" y2="135"/><path id="monitor-raw-path" d=""/><text class="monitor-axis" x="38" y="177">−2 s</text><text class="monitor-axis" x="194" y="177" text-anchor="middle">−1 s</text><text class="monitor-axis" x="350" y="177" text-anchor="end">Captura</text></svg><p id="monitor-raw-state" class="mini" role="status">Clique em Atualizar captura para buscar os últimos 2 segundos do ESP.</p><div class="monitor-foot"><span id="monitor-raw-range">RAW · escala 0–4095</span><span id="monitor-raw-extremes">Mín: — · Máx: —</span></div><h2 style="margin-top:18px">Detecção relativa de CLIP</h2><p class="monitor-note">Referência: média móvel de 60 s. CLIP curto exige descida e subida rápidas (até 60 ms), com pelo menos 2 amostras abaixo de 80% da referência. Mais de 30 amostras consecutivas baixas confirma CLIP sustentado sem aguardar a subida. Recuperação em 90% da referência. O RGB pisca vermelho durante a indicação.</p><p id="monitor-cal-state" class="mini" role="status">Formando referência de 60 segundos…</p></section>
  <section class="monitor-card" style="margin-top:12px"><div class="monitor-heading" style="margin-top:0"><h2>Eventos</h2><span id="monitor-clip-count" class="mini">CLIP: —</span></div><div id="monitor-events" class="monitor-events">Carregando eventos do ESP…</div></section>
- <p class="monitor-note">Temperatura estimada pela curva NTC 10 kΩ / B3950. Mede o ponto onde o sensor está preso; não é a temperatura direta da bobina. Monitoramento sem redução automática de ganho.</p>
+ <section class="monitor-card" style="margin-top:12px"><h2>Referência térmica</h2><p class="monitor-note">Temperatura do ar usada pelo modelo. Alterar reinicia a estimativa.</p><div class="monitor-calibration"><label style="flex:1;font-size:12px">Ambiente (°C)<input id="monitor-ambient" type="number" min="0" max="60" step="0.1" value="27.8" style="width:100%;padding:10px;background:#10192a;color:#fff;border:1px solid #40516c;border-radius:8px"></label><button id="monitor-ambient-save" type="button">Salvar ambiente</button></div><p id="monitor-ambient-state" class="mini" role="status">Salvo no ESP.</p></section>
+ <p class="monitor-note">NTC: temperatura no sensor. Bobina: estimativa experimental pela evolução do NTC, com atraso de filtragem. Ao ligar o ESP com o falante quente, a estimativa precisa se acomodar. Sem redução automática de ganho.</p>
 </main>
 <script src="/eq-response.js"></script>
 <script>
@@ -301,7 +303,7 @@ function flushOutputs(){
  return sending;
 }
 
-let currentView='eq',monitorTimer=null,monitorFetching=false,monitorGeneration=0,monitorCalibrating=false,monitorLimitEdited=false;
+let currentView='eq',monitorTimer=null,monitorFetching=false,monitorGeneration=0;
 const monitorHistory=[];let lastHistoryFetch=0,rawCapture=null,rawGraphMax=4095,rawFetching=false;
 function monitorBadge(id,text,tone='warn'){const el=$(id);el.textContent=text;el.setAttribute('data-tone',tone);}
 function bootTime(ms){const sec=Math.floor(ms/1000);return [Math.floor(sec/3600),Math.floor(sec/60)%60,sec%60].map(n=>String(n).padStart(2,'0')).join(':');}
@@ -327,13 +329,13 @@ function monitorGraph(now){
  $('monitor-temp-min').textContent=format(low)+' °C';$('monitor-temp-avg').textContent=format(mean)+' °C';$('monitor-temp-max').textContent=format(high)+' °C';
 }
 function drawRawCapture(){
- const limit=Number($('monitor-limit').value)||450;
+ const limit=rawCapture&&Number.isFinite(rawCapture.threshold)?rawCapture.threshold:null;
  if(limit>rawGraphMax)rawGraphMax=Math.min(4095,Math.ceil((limit+20)/100)*100);
- $('monitor-limit-slider').max=Math.min(4075,rawGraphMax);$('monitor-limit-slider').value=limit;
  for(let i=0;i<4;i++)$('monitor-raw-y'+i).textContent=Math.round(rawGraphMax*(1-i/4));
  const y=150-130*Math.max(0,Math.min(rawGraphMax,limit))/rawGraphMax;
  $('monitor-raw-limit-line').setAttribute('y1',y);$('monitor-raw-limit-line').setAttribute('y2',y);$('monitor-raw-zone').setAttribute('y',y);$('monitor-raw-zone').setAttribute('height',150-y);
- $('monitor-raw-range').textContent='RAW 0–'+rawGraphMax+' · linha do limiar '+limit+(monitorLimitEdited?' (não salvo)':'');
+ $('monitor-raw-limit-line').setAttribute('visibility',limit===null?'hidden':'visible');$('monitor-raw-zone').setAttribute('visibility',limit===null?'hidden':'visible');
+ $('monitor-raw-range').textContent='RAW 0–'+rawGraphMax+(limit===null?' · formando média de 60 s':' · 80% da média: '+Math.round(limit));
  if(!rawCapture)return;
  let d='',connected=false;const values=[];
  for(const p of rawCapture.samples){if(!Number.isFinite(p.raw)){connected=false;continue;}values.push(p.raw);const x=38+312*(p.at_ms-(rawCapture.uptime_ms-2000))/2000,pointY=150-130*p.raw/rawGraphMax;d+=(connected?' L':' M')+x.toFixed(1)+' '+pointY.toFixed(1);connected=true;}
@@ -344,34 +346,46 @@ async function refreshRawCapture(){
  try{
   const data=await api('/api/telemetry/ldr/capture');
   if(!data||!Number.isFinite(data.uptime_ms)||!Array.isArray(data.samples))throw Error('Captura inválida');
-  rawCapture={uptime_ms:data.uptime_ms,samples:data.samples.filter(p=>Number.isFinite(p.at_ms)&&p.at_ms>=data.uptime_ms-2000&&p.at_ms<=data.uptime_ms)};
+  rawCapture={uptime_ms:data.uptime_ms,threshold:Number.isFinite(data.threshold)?data.threshold:null,samples:data.samples.filter(p=>Number.isFinite(p.at_ms)&&p.at_ms>=data.uptime_ms-2000&&p.at_ms<=data.uptime_ms)};
   const valid=rawCapture.samples.filter(p=>Number.isFinite(p.raw)).map(p=>p.raw);
-  rawGraphMax=Math.min(4095,Math.max(100,Math.ceil(Math.max(valid.length?Math.max(...valid)*1.05:100,(Number($('monitor-limit').value)||450)+20)/100)*100));
+  rawGraphMax=Math.min(4095,Math.max(100,Math.ceil(Math.max(valid.length?Math.max(...valid)*1.05:100,(rawCapture.threshold||0)+20)/100)*100));
   drawRawCapture();$('monitor-raw-state').textContent='Captura congelada em '+bootTime(data.uptime_ms)+' · '+valid.length+' amostras · aquisição nominal 20 ms';
  }catch(e){$('monitor-raw-state').textContent='Falha ao capturar: '+e.message;}
  finally{rawFetching=false;$('monitor-raw-refresh').disabled=false;}
 }
 $('monitor-raw-refresh').onclick=refreshRawCapture;
+let ambientEdited=false;
+$('monitor-ambient').oninput=()=>{ambientEdited=true;};
+$('monitor-ambient-save').onclick=async()=>{
+ const button=$('monitor-ambient-save');button.disabled=true;
+ try{const ambient=Number($('monitor-ambient').value);if(!Number.isFinite(ambient)||ambient<0||ambient>60||!$('monitor-ambient').value.trim())throw Error('Informe de 0 a 60 °C');
+ const data=await api('/api/telemetry/thermal',{ambient_c:ambient});ambientEdited=false;renderMonitor(data);$('monitor-ambient-state').textContent='Ambiente salvo. Reiniciando estimativa com 10 leituras.';
+ }catch(e){$('monitor-ambient-state').textContent=e.message;}finally{button.disabled=false;}
+};
 function renderMonitor(data){
  if(!data||!data.temperature||!data.clip)throw Error('Telemetria inválida');
- const t=data.temperature,c=data.clip,validTemp=['ok','estimated'].includes(t.status)&&Number.isFinite(t.celsius);
+ const t=data.temperature,c=data.clip,coil=data.coil||{},validTemp=['ok','estimated'].includes(t.status)&&Number.isFinite(t.celsius);
  $('monitor-temperature').textContent=validTemp?t.celsius.toFixed(1).replace('.',','):'—';
- monitorBadge('monitor-temp-state',validTemp?'Estimativa · B3950':t.status==='out_of_range'?'Fora de faixa':'Sem leitura','warn');
+ monitorBadge('monitor-temp-state',validTemp?'NTC · B3950':t.status==='out_of_range'?'Fora de faixa':'Sem leitura','warn');
+ const coilValid=validTemp&&coil.status==='estimated'&&Number.isFinite(coil.celsius);
+ $('monitor-coil').textContent=coilValid?coil.celsius.toFixed(1).replace('.',','):'—';
+ monitorBadge('monitor-coil-state',coilValid?'Modelo v2 · NTC':coil.status==='warming_up'?'Aguardando 10 leituras':'Sem estimativa','warn');
+ $('monitor-coil-detail').textContent='NTC médio: '+(Number.isFinite(coil.ntc_mean10_c)?coil.ntc_mean10_c.toFixed(1).replace('.',',')+' °C':'—')+' · ambiente '+(Number.isFinite(coil.ambient_c)?coil.ambient_c.toFixed(1).replace('.',',')+' °C':'—');
+ if(!ambientEdited&&Number.isFinite(coil.ambient_c))$('monitor-ambient').value=coil.ambient_c;
  const electrical=s=>Number.isFinite(s.millivolts)?s.millivolts.toFixed(0)+' mV':Number.isFinite(s.raw)?'ADC '+s.raw:'sem amostra válida';
  $('monitor-temp-electric').textContent='GPIO18 · '+electrical(t)+(Number.isFinite(t.resistance_ohm)?' · '+(t.resistance_ohm/1000).toFixed(2)+' kΩ':'');
- const clipKnown=['ok','provisional'].includes(c.status)&&typeof c.active==='boolean';
+ const clipKnown=c.status==='ok'&&typeof c.active==='boolean';
  $('monitor-clip').textContent=clipKnown?(c.active?(c.status==='provisional'?'Possível CLIP':'CLIP detectado'):'Sem CLIP'):'Sem leitura';
- monitorBadge('monitor-clip-state',clipKnown?(c.active?'Retenção de 2 s':c.status==='provisional'?'Limiar provisório':'LED monitorado'):(c.status==='uncalibrated'?'Calibração pendente':'Sensor indisponível'),clipKnown?(c.active?'danger':'ok'):'warn');
+ monitorBadge('monitor-clip-state',clipKnown?(c.active?'Retenção de 2 s':c.status==='provisional'?'Limiar provisório':'LED monitorado'):(c.status==='warming_up'?'Média inicial · 60 s':'Sensor indisponível'),clipKnown?(c.active?'danger':'ok'):'warn');
  $('monitor-clip-electric').textContent='GPIO17 · '+electrical(c)+(Number.isFinite(c.raw)?' · RAW '+c.raw:'');
- if(!monitorLimitEdited&&Number.isFinite(c.threshold))$('monitor-limit').value=c.threshold;drawRawCapture();
+ drawRawCapture();
  $('monitor-clip-count').textContent='CLIP: '+(Number.isFinite(c.count)?c.count:'—');
- const refs=[];if(Number.isFinite(c.dark_reference))refs.push('apagado '+c.dark_reference);if(Number.isFinite(c.lit_reference))refs.push('aceso '+c.lit_reference);
- if(!monitorCalibrating)$('monitor-cal-state').textContent=c.manual?'Manual provisório · CLIP < '+c.threshold+' · libera ≥ '+(c.threshold+20):refs.length?'Referências ADC: '+refs.join(' · '):'Capture as duas referências para habilitar a detecção.';
+ $('monitor-cal-state').textContent=c.status==='warming_up'?'Aguardando um minuto de leituras válidas.':Number.isFinite(c.baseline_raw)?'Borda ≤60 ms · média 60 s: '+c.baseline_raw.toFixed(0)+' · dispara < '+c.threshold.toFixed(0)+' · libera ≥ '+c.release_raw.toFixed(0):'Sem referência válida do LDR.';
  monitorBadge('monitor-connection','ESP conectado','ok');
  const alert=$('monitor-alert');alert.setAttribute('data-tone',clipKnown&&c.active?'danger':'warn');
- alert.textContent=clipKnown&&c.active?'Clipping indicado pelo amplificador. Monitoramento não altera o ganho.':!validTemp?'Temperatura sem leitura válida. Confira o divisor resistivo e a ligação do NTC.':!clipKnown?'Temperatura estimada disponível. Calibre o LDR para acompanhar o LED CLIP.':'Sensores acompanhados. Temperatura estimada; proteção automática ainda desativada.';
+ alert.textContent=clipKnown&&c.active?'Clipping indicado pelo amplificador. Monitoramento não altera o ganho.':!validTemp?'Temperatura sem leitura válida. Confira o divisor resistivo e a ligação do NTC.':!clipKnown?'Aguardando referência de 60 segundos do LDR para acompanhar o LED CLIP.':'Sensores acompanhados. Temperatura estimada; proteção automática ainda desativada.';
 }
-function monitorUnavailable(){monitorBadge('monitor-connection','Sem conexão','warn');$('monitor-temperature').textContent='—';$('monitor-clip').textContent='Sem leitura';monitorBadge('monitor-temp-state','Sem leitura');monitorBadge('monitor-clip-state','Sem leitura');$('monitor-alert').textContent='Não foi possível atualizar os sensores. As leituras anteriores não representam o estado atual.';$('monitor-history-state').textContent='Sem conexão; histórico exibido até a última atualização.';}
+function monitorUnavailable(){monitorBadge('monitor-connection','Sem conexão','warn');$('monitor-temperature').textContent='—';$('monitor-coil').textContent='—';monitorBadge('monitor-coil-state','Sem conexão');$('monitor-clip').textContent='Sem leitura';monitorBadge('monitor-temp-state','Sem leitura');monitorBadge('monitor-clip-state','Sem leitura');$('monitor-alert').textContent='Não foi possível atualizar os sensores. As leituras anteriores não representam o estado atual.';$('monitor-history-state').textContent='Sem conexão; histórico exibido até a última atualização.';}
 async function pollMonitor(){
  if(currentView!=='monitor'||monitorFetching)return;monitorFetching=true;const generation=monitorGeneration;
  try{
@@ -391,17 +405,6 @@ function selectView(view){
  if(view==='monitor'){lastHistoryFetch=0;pollMonitor();}else draw();
 }
 $('view-eq').onclick=()=>selectView('eq');$('view-monitor').onclick=()=>selectView('monitor');
-async function calibrateMonitor(state){
- if(monitorCalibrating)return;monitorCalibrating=true;$('monitor-limit').disabled=true;$('monitor-limit-slider').disabled=true;$('monitor-limit-save').disabled=true;$('monitor-cal-off').disabled=true;$('monitor-cal-on').disabled=true;
- try{const data=await api('/api/telemetry/ldr',typeof state==='object'?state:{state});monitorCalibrating=false;monitorLimitEdited=false;renderMonitor(data);lastHistoryFetch=0;$('monitor-cal-state').textContent='Referência salva no ESP32.';}
- catch(e){$('monitor-cal-state').textContent=e.message;}
- finally{monitorCalibrating=false;$('monitor-limit').disabled=false;$('monitor-limit-slider').disabled=false;$('monitor-limit-save').disabled=false;$('monitor-cal-off').disabled=false;$('monitor-cal-on').disabled=false;}
-}
-$('monitor-limit').oninput=()=>{monitorLimitEdited=true;drawRawCapture();};
-$('monitor-limit-slider').oninput=()=>{monitorLimitEdited=true;$('monitor-limit').value=$('monitor-limit-slider').value;drawRawCapture();};
-$('monitor-limit-save').onclick=()=>{const threshold=Number($('monitor-limit').value);if(!Number.isInteger(threshold)||threshold<1||threshold>4075){$('monitor-cal-state').textContent='Use um inteiro de 1 a 4075.';return;}return calibrateMonitor({threshold});};
-$('monitor-cal-off').onclick=()=>calibrateMonitor('off');$('monitor-cal-on').onclick=()=>calibrateMonitor('on');
-
 window.addEventListener('click',e=>{if(!e.target.closest('.filter-type'))closeTypeMenus();});
 window.addEventListener('resize',draw);
 controls();draw();

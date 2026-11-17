@@ -27,6 +27,14 @@ cl /nologo /std:c11 /W4 /I..\main thermal_model_test.c ..\main\thermal_model.c /
 if errorlevel 1 exit /b 1
 thermal_model_test.exe
 if errorlevel 1 exit /b 1
+cl /nologo /std:c11 /W4 /I..\main thermal_observer_test.c ..\main\thermal_observer.c /Fe:thermal_observer_test.exe
+if errorlevel 1 exit /b 1
+thermal_observer_test.exe
+if errorlevel 1 exit /b 1
+cl /nologo /std:c11 /W4 /I..\main clip_detector_test.c ..\main\clip_detector.c /Fe:clip_detector_test.exe
+if errorlevel 1 exit /b 1
+clip_detector_test.exe
+if errorlevel 1 exit /b 1
 node ui_test.js
 if errorlevel 1 exit /b 1
 node response_test.js

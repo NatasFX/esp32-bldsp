@@ -10,3 +10,6 @@ __pycache__/
 preview-*.jpg
 .env
 .env.*
+
+# Reproducible numerical cache; model JSON/CSV and figures are versioned.
+docs/ensaios/**/parameters.npy

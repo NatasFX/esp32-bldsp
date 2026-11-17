@@ -12,6 +12,7 @@ status_kind_t status_visual_kind(const status_snapshot_t *s) {
     if(s->source_error)return LED_ERROR;
     if(!s->bluetooth_mode)return LED_SWITCHING;
     if(s->bootstrap_error||s->eq_error)return LED_ERROR;
+    if(s->clip)return LED_CLIP;
     if(!s->eq_ready||s->working)return LED_SYNC;
     return LED_READY;
 }
@@ -23,6 +24,7 @@ status_rgb_t status_visual_color(status_kind_t kind,uint64_t ms) {
         case LED_WAIT_USB:return (status_rgb_t){(uint8_t)level,(uint8_t)(level*2/3),0};
         case LED_SWITCHING:return (status_rgb_t){(uint8_t)(level*3/4),0,(uint8_t)level};
         case LED_SYNC:return (status_rgb_t){0,(uint8_t)level,(uint8_t)level};
+        case LED_CLIP:return (status_rgb_t){ms%250<125?128:0,0,0};
         case LED_ERROR:return (status_rgb_t){ms%1000<500?128:0,0,0};
         case LED_READY: {
             unsigned hue=(unsigned)((ms%5120)*1536/5120),sector=hue/256;

@@ -1,0 +1,100 @@
+{
+  "eigenvalues_per_s": [
+    -0.10244204680618092,
+    -0.002836628551530357,
+    -0.010987335718371932
+  ],
+  "time_constants_s": [
+    9.761616749926791,
+    352.5311763010005,
+    91.0138750314054
+  ],
+  "positive_conductances": true,
+  "positive_capacities": true,
+  "equilibria": {
+    "11": {
+      "coil_c": 81.28447249865123,
+      "body_equivalent_c": 36.023373495210436,
+      "ntc_c": 41.20449565625132,
+      "after_72h_error_to_equilibrium_c": 8.881784197001252e-15
+    },
+    "15": {
+      "coil_c": 118.68695746975256,
+      "body_equivalent_c": 41.77410056041833,
+      "ntc_c": 50.57845830196642,
+      "after_72h_error_to_equilibrium_c": 1.4210854715202004e-14
+    },
+    "17": {
+      "coil_c": 139.25254341029773,
+      "body_equivalent_c": 44.93611163458975,
+      "ntc_c": 55.732688951156284,
+      "after_72h_error_to_equilibrium_c": 8.526512829121202e-14
+    },
+    "24": {
+      "coil_c": 217.30629489483172,
+      "body_equivalent_c": 56.93707417892157,
+      "ntc_c": 75.29483706348815,
+      "after_72h_error_to_equilibrium_c": 2.842170943040401e-14
+    }
+  },
+  "stress": [
+    {
+      "scenario": "60h alternating 1h 17V / 1h off, then 12h off",
+      "final_delta_c": [
+        3.2200273698023804e-57,
+        5.118872346924091e-57,
+        3.937494856541921e-57
+      ],
+      "peak_delta_c": [
+        111.45228625931234,
+        17.135579562114827,
+        27.93229136994384
+      ]
+    }
+  ],
+  "initial_body_error_60c_decay": [
+    {
+      "time_s": 0,
+      "coil_error_c": 0.0,
+      "body_error_c": 60.0,
+      "ntc_error_c": 0.0
+    },
+    {
+      "time_s": 60,
+      "coil_error_c": 11.854936895846931,
+      "body_error_c": 49.88042718313459,
+      "ntc_error_c": 35.07881234049858
+    },
+    {
+      "time_s": 300,
+      "coil_error_c": 14.170128571996926,
+      "body_error_c": 24.74764448598032,
+      "ntc_error_c": 18.80681552165281
+    },
+    {
+      "time_s": 900,
+      "coil_error_c": 2.826972165223261,
+      "body_error_c": 4.497078108648396,
+      "ntc_error_c": 3.4588892671286224
+    },
+    {
+      "time_s": 1800,
+      "coil_error_c": 0.22022450244851124,
+      "body_error_c": 0.3500906929768422,
+      "ntc_error_c": 0.26929372874008806
+    },
+    {
+      "time_s": 3600,
+      "coil_error_c": 0.0013347133155844084,
+      "body_error_c": 0.0021217916177641008,
+      "ntc_error_c": 0.0016321062561014843
+    },
+    {
+      "time_s": 7200,
+      "coil_error_c": 4.9026663166204264e-08,
+      "body_error_c": 7.793760782811196e-08,
+      "ntc_error_c": 5.9950494787934e-08
+    }
+  ],
+  "stability_argument": "For zero input, derivative of 0.5*(Cc*x^2+Cb*b^2) is -Gca*x^2-Gba*b^2-Gcb*(x-b)^2 <0 outside origin. Sensor is a stable first-order follower. Positive bounded heating gives bounded states; this is not a bound on model error against real hardware."
+}

@@ -1,11 +1,13 @@
 #include "thermal_model.h"
+#include "thermal_parameters.h"
 #include <math.h>
+// joint_v2: calibrated on both stationary DC runs; electrical law unchanged.
 void thermal_model_init(thermal_model_t *s,double ambient){*s=(thermal_model_t){.ambient=ambient};}
 void thermal_model_init_observed(thermal_model_t *s,double ambient,double coil,double ntc){
     thermal_model_init(s,ambient);s->coil_delta=coil-ambient;s->ntc_delta=ntc-ambient;
     // Initial sensor is assumed approximately stationary, not instantly at ambient.
     // H is the body contribution, not measured frame temperature.
-    s->body_effect=fmax(0,s->ntc_delta-.12847667377287805*s->coil_delta);
+    s->body_effect=fmax(0,s->ntc_delta-THERMAL_SENSOR_COIL_WEIGHT*s->coil_delta);
 }
 double thermal_model_current(const thermal_model_t *s,double voltage,double limit){
     double r=3.596662911673227+.011856911913765731*(s->ambient+s->coil_delta-27.86);
@@ -16,9 +18,9 @@ static void derivative(const thermal_model_t *s,double v,double limit,bool on,do
     double i=on?thermal_model_current(s,v,limit):0;
     double r=3.2057936565596066+.011856911913765731*(s->ambient+s->coil_delta-27.86);
     double p=i*i*r;
-    d[0]=p/45.28945929537856-.011712475216921526*s->coil_delta+.009684306578637078*s->body_effect;
-    d[1]=.00046138761184564897*s->coil_delta-.0039747387754912895*s->body_effect;
-    d[2]=(.12847667377287805*s->coil_delta+s->body_effect-s->ntc_delta)/13.023514572513946;
+    d[0]=p/THERMAL_COIL_CAPACITY_J_K-THERMAL_COIL_LOSS_PER_S*s->coil_delta+THERMAL_BODY_TO_COIL_PER_S*s->body_effect;
+    d[1]=THERMAL_COIL_TO_BODY_PER_S*s->coil_delta-THERMAL_BODY_LOSS_PER_S*s->body_effect;
+    d[2]=(THERMAL_SENSOR_COIL_WEIGHT*s->coil_delta+s->body_effect-s->ntc_delta)/THERMAL_SENSOR_TAU_S;
 }
 static thermal_model_t offset(const thermal_model_t *s,const double *d,double dt){
     thermal_model_t a=*s;a.coil_delta+=d[0]*dt;a.body_effect+=d[1]*dt;a.ntc_delta+=d[2]*dt;return a;

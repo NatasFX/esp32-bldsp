@@ -1,0 +1,138 @@
+{
+  "frozen_model": "pre17_v1",
+  "parameters_refitted": false,
+  "ambient_c": 27.8,
+  "voltage_assumed_v": 17,
+  "power_on_video_s": 8.0,
+  "power_off_video_s": 901.0,
+  "power_off_uncertainty_s": 2,
+  "switch_evidence": "Rapid sustained thermal decline starts immediately after 900.5s; source not visible. Off estimated 901 +/-2s, supersedes verbal 16min.",
+  "powered_duration_s": 893.0,
+  "camera_method": "Manual hotspot readings on reviewed frames, sparse independent references. Not ten-sample camera averages. 900.5s jump treated separately.",
+  "ntc_method": "Nonoverlapping ten-second windows of serial instantaneous samples, counts retained; usually 10 samples, occasionally 9/11 due sample timing.",
+  "coil_heating": {
+    "n": 12,
+    "bias_prediction_minus_observed_c": 5.285252946777958,
+    "mae_c": 5.285252946777958,
+    "rmse_c": 5.3186757991939455,
+    "max_absolute_c": 6.304673904145886
+  },
+  "coil_cooling": {
+    "n": 6,
+    "bias_prediction_minus_observed_c": -0.7450469203604086,
+    "mae_c": 2.509378957357247,
+    "rmse_c": 2.7052727166079817,
+    "max_absolute_c": 4.215380154436389
+  },
+  "ntc_heating": {
+    "n": 89,
+    "bias_prediction_minus_observed_c": -0.5035060901877902,
+    "mae_c": 0.9816879808092868,
+    "rmse_c": 1.1738342202800955,
+    "max_absolute_c": 3.4696020626931485
+  },
+  "ntc_cooling": {
+    "n": 48,
+    "bias_prediction_minus_observed_c": 0.8532751321741406,
+    "mae_c": 1.2659875954809603,
+    "rmse_c": 1.5391637691203186,
+    "max_absolute_c": 2.850088922677706
+  },
+  "points": [
+    {
+      "video_s": 30.5,
+      "coil_camera_c": 54.9,
+      "coil_prediction_c": 58.9031046956601
+    },
+    {
+      "video_s": 60.5,
+      "coil_camera_c": 79.4,
+      "coil_prediction_c": 85.51155854223985
+    },
+    {
+      "video_s": 120.5,
+      "coil_camera_c": 107.3,
+      "coil_prediction_c": 113.60467390414588
+    },
+    {
+      "video_s": 180.5,
+      "coil_camera_c": 120.0,
+      "coil_prediction_c": 125.79927615264562
+    },
+    {
+      "video_s": 240.5,
+      "coil_camera_c": 125.9,
+      "coil_prediction_c": 131.46622286118173
+    },
+    {
+      "video_s": 300.5,
+      "coil_camera_c": 128.9,
+      "coil_prediction_c": 134.34728192943388
+    },
+    {
+      "video_s": 360.5,
+      "coil_camera_c": 130.7,
+      "coil_prediction_c": 135.98157083122604
+    },
+    {
+      "video_s": 480.5,
+      "coil_camera_c": 132.8,
+      "coil_prediction_c": 137.7382650091811
+    },
+    {
+      "video_s": 600.5,
+      "coil_camera_c": 133.5,
+      "coil_prediction_c": 138.68429547496797
+    },
+    {
+      "video_s": 720.5,
+      "coil_camera_c": 134.4,
+      "coil_prediction_c": 139.2678716020174
+    },
+    {
+      "video_s": 840.5,
+      "coil_camera_c": 134.7,
+      "coil_prediction_c": 139.64300279454844
+    },
+    {
+      "video_s": 899.5,
+      "coil_camera_c": 134.8,
+      "coil_prediction_c": 139.7759115640875
+    },
+    {
+      "video_s": 900.5,
+      "coil_camera_c": 139.7,
+      "coil_prediction_c": 139.77793140572422
+    },
+    {
+      "video_s": 930.5,
+      "coil_camera_c": 107.2,
+      "coil_prediction_c": 110.05804902565204
+    },
+    {
+      "video_s": 990.5,
+      "coil_camera_c": 71.0,
+      "coil_prediction_c": 73.43494708533848
+    },
+    {
+      "video_s": 1080.5,
+      "coil_camera_c": 50.4,
+      "coil_prediction_c": 49.015028068244604
+    },
+    {
+      "video_s": 1140.5,
+      "coil_camera_c": 42.9,
+      "coil_prediction_c": 41.67324174650711
+    },
+    {
+      "video_s": 1200.5,
+      "coil_camera_c": 40.4,
+      "coil_prediction_c": 37.463832706531704
+    },
+    {
+      "video_s": 1260.5,
+      "coil_camera_c": 39.1,
+      "coil_prediction_c": 34.88461984556361
+    }
+  ]
+}

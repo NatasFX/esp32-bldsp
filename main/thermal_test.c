@@ -1,5 +1,6 @@
 #include "thermal_test.h"
 #include "thermal_model.h"
+#include "thermal_parameters.h"
 #include "freertos/FreeRTOS.h"
 #include "esp_timer.h"
 #include "esp_log.h"
@@ -82,7 +83,7 @@ static cJSON *status_object(void){
     trial_sample_t sample={0};if(count)sample=samples[count-1];
     portEXIT_CRITICAL(&lock);
     uint64_t now=esp_timer_get_time()/1000;
-    cJSON *o=cJSON_CreateObject();cJSON_AddStringToObject(o,"model_version","pre17_v1");cJSON_AddStringToObject(o,"storage","ram");
+    cJSON *o=cJSON_CreateObject();cJSON_AddStringToObject(o,"model_version",THERMAL_MODEL_VERSION);cJSON_AddStringToObject(o,"storage","ram");
     cJSON_AddNumberToObject(o,"session_id",id);cJSON_AddNumberToObject(o,"uptime_ms",now);cJSON_AddNumberToObject(o,"start_ms",(double)start);
     cJSON_AddStringToObject(o,"phase",phases[phase]);cJSON_AddBoolToObject(o,"recording",active);cJSON_AddBoolToObject(o,"model_valid",mvalid);
     cJSON_AddNumberToObject(o,"elapsed_ms",start?(active?now-start:sample.ms):0);cJSON_AddNumberToObject(o,"samples",count);cJSON_AddNumberToObject(o,"capacity",capacity?capacity:CAPACITY);

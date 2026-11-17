@@ -1,0 +1,59 @@
+{
+  "version": "joint_v2",
+  "status": "Calibration on BOTH runs; not independent validation",
+  "electrical": {
+    "r_at_reference_ohm": 3.596662911673227,
+    "reference_c": 27.859999999999996,
+    "slope_ohm_per_c": 0.011856911913765731,
+    "alpha_effective_per_c": 0.003296642528073252,
+    "r_at_20c_ohm": 3.5034675840310285,
+    "fit_rmse_ohm": 0.009949765551656456,
+    "wire_r_assumed_ohm": 0.39086925511362036,
+    "coil_r_at_reference_ohm": 3.2057936565596066,
+    "coil_r_at_20c_ohm": 3.112598328917408,
+    "coil_alpha_effective_20c_per_c": 0.0038093292679655458,
+    "warning": "V/I from source; lead resistance uses user estimate of 4W at 3.199A; hotspot treated as coil temperature per user."
+  },
+  "thermal": {
+    "coil_capacity_j_k": 48.90843358694618,
+    "body_capacity_j_k": 500.0,
+    "coil_ambient_w_k": 0.28109945565047206,
+    "coil_body_w_k": 0.24141899882610776,
+    "body_ambient_w_k": 1.3287599321062342,
+    "sensor_tau_s": 9.761616749926791,
+    "sensor_coil_weight": 0.1501532429349919,
+    "sensor_body_weight": 0.6534579351213011,
+    "sensor_ambient_weight": 0.196388821943707
+  },
+  "linear_eigenvalues_per_s": [
+    -0.10244204680618092,
+    -0.002836628551530357,
+    -0.010987335718371932
+  ],
+  "normalized_body_coefficients": {
+    "coil_loss": 0.010683606408037605,
+    "body_to_coil": 0.0075538795368635565,
+    "coil_to_body": 0.0003155143209439204,
+    "body_loss": 0.003140357861864684
+  },
+  "multistart_costs": [
+    107.63995324383762,
+    107.62782538089195,
+    107.63409547217384
+  ],
+  "note": "Body capacity fixed as a gauge; equivalent hidden state, not measured frame temperature. 17V assumed, electrical law unchanged.",
+  "fit_metrics": {
+    "1": {
+      "coil_rmse_c": 1.7038578912775928,
+      "coil_mae_c": 1.5494109679822523,
+      "ntc_rmse_c": 0.6295980524579258,
+      "ntc_mae_c": 0.43161785268617336
+    },
+    "2": {
+      "coil_rmse_c": 3.671961073486396,
+      "coil_mae_c": 3.5181486634354626,
+      "ntc_rmse_c": 1.0597017410465825,
+      "ntc_mae_c": 0.8654651067772342
+    }
+  }
+}

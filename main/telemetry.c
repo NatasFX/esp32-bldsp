@@ -1,8 +1,11 @@
 #include "telemetry.h"
 #include "telemetry_math.h"
+#include "clip_detector.h"
 #include "thermal_test.h"
+#include "thermal_observer.h"
 #include "monitor_log.h"
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
 #include <stdlib.h>
 #include "esp_adc/adc_oneshot.h"
@@ -15,6 +18,7 @@
 #include "nvs.h"
 #include "cJSON.h"
 #include "source_control.h"
+#include "status_led.h"
 
 // 3V3 -> fixed 10k -> ADC -> grounded sensor. 17=LDR, 18=NTC.
 static adc_oneshot_unit_handle_t adc;
@@ -22,13 +26,14 @@ static adc_cali_handle_t calibration[2];
 static const adc_channel_t channels[]={ADC_CHANNEL_6,ADC_CHANNEL_7};
 static portMUX_TYPE mux=portMUX_INITIALIZER_UNLOCKED;
 static monitor_log_t history_log;
+static clip_detector_t clip_detector;
+static thermal_observer_t observer;
 static struct {
     int raw[2],mv[2];bool valid[2];int64_t sampled[2];
-    int dark,lit,threshold;bool manual,led_on;unsigned debounce,clips;int64_t last_clip;
-} readings={.dark=-1,.lit=-1,.threshold=450,.manual=true};
-static bool calibrated_ldr(int dark,int lit){return dark>=0&&lit>=0&&dark-lit>=100;}
+    double baseline,threshold,release;bool clip_ready,clip_active;unsigned clips;int64_t last_clip;
+} readings;
 static void sensor_task(void *arg) {
-    (void)arg;unsigned report=0;int previous_ntc=-1,previous_ldr=-1;int64_t next_sample=0;
+    (void)arg;unsigned report=0;int previous_ntc=-1,previous_ldr=-1;int64_t next_sample=0;TickType_t cadence=xTaskGetTickCount();
     while(1){
         for(int ch=0;ch<2;ch++){
             int sum=0,count=0;
@@ -44,47 +49,55 @@ static void sensor_task(void *arg) {
             if(valid)readings.sampled[ch]=now;
             if(ch==0){
                 monitor_log_raw(&history_log,now/1000,valid?value:-1);
-                if(valid&&(readings.manual||calibrated_ldr(readings.dark,readings.lit))){
-                    int mid=(readings.dark+readings.lit)/2,hyst=(readings.dark-readings.lit)/10;
-                    bool next=telemetry_ldr_active(value,readings.led_on,readings.manual?readings.threshold:mid-hyst,readings.manual?20:2*hyst);
-                    if(next!=readings.led_on){
-                        if(++readings.debounce>=2){readings.led_on=next;readings.debounce=0;monitor_log_event(&history_log,now/1000,next?MONITOR_CLIP_ON:MONITOR_CLIP_OFF,0);if(next){readings.clips++;edge=true;}}
-                    }else readings.debounce=0;
-                    if(readings.led_on)readings.last_clip=now;
-                }else readings.debounce=0;
+                bool previous=readings.clip_active;
+                clip_detector_sample(&clip_detector,(uint32_t)(now/1000),valid,value);
+                readings.baseline=clip_detector.baseline;readings.threshold=clip_detector.trigger;
+                readings.release=clip_detector.release;readings.clip_ready=clip_detector.ready;readings.clip_active=clip_detector.active;
+                if(previous!=readings.clip_active){
+                    monitor_log_event(&history_log,now/1000,readings.clip_active?MONITOR_CLIP_ON:MONITOR_CLIP_OFF,value);
+                    if(readings.clip_active){readings.clips++;edge=true;}
+                }
+                if(readings.clip_active)readings.last_clip=now;
                 if(previous_ldr!=(int)valid){monitor_log_event(&history_log,now/1000,valid?MONITOR_LDR_VALID:MONITOR_LDR_INVALID,0);previous_ldr=valid;}
             }else{
                 if(previous_ntc!=(int)temperature_valid){monitor_log_event(&history_log,now/1000,temperature_valid?MONITOR_NTC_VALID:MONITOR_NTC_INVALID,0);previous_ntc=temperature_valid;}
                 if(now>=next_sample){
+                    thermal_observer_sample(&observer,now/1000,temperature_valid,temperature);
                     monitor_sample_t sample={.at_ms=now/1000,.temperature_c=(float)temperature,.temperature_valid=temperature_valid,
                         .ldr_mv=readings.valid[0]?readings.mv[0]:-1,
-                        .clip=readings.valid[0]&&(readings.manual||calibrated_ldr(readings.dark,readings.lit))?(int8_t)readings.led_on:-1};
+                        .clip=readings.valid[0]&&readings.clip_ready?(int8_t)readings.clip_active:-1};
                     monitor_log_sample(&history_log,sample);next_sample=now+1000000;
                     trial_due=true;
                 }
             }
             portEXIT_CRITICAL(&mux);
-            if(trial_due)thermal_test_sample(now/1000,temperature_valid,temperature,value,mv);
+            if(ch==0){
+                portENTER_CRITICAL(&mux);__typeof__(readings) trace=readings;portEXIT_CRITICAL(&mux);
+                status_led_clip(valid&&trace.clip_active);
+                ESP_LOGI("clip_raw","CLIP_RAW t=%llu r=%d b=%.1f ready=%d a=%d n=%u",(unsigned long long)(now/1000),valid?value:-1,trace.baseline,trace.clip_ready,trace.clip_active,trace.clips);
+            }
+            if(trial_due){
+                thermal_test_sample(now/1000,temperature_valid,temperature,value,mv);
+                portENTER_CRITICAL(&mux);thermal_observer_t est=observer;portEXIT_CRITICAL(&mux);
+                ESP_LOGI("thermal_observer","ESTIMATE t_ms=%llu model=joint_v2_ntc valid=%d mean10_c=%.3f coil_c=%.3f ambient_c=%.2f",(unsigned long long)(now/1000),est.valid,est.mean,est.valid?est.coil:NAN,est.ambient);
+            }
             if(edge)ESP_LOGW("sensors","CLIP LED detected; no automatic gain intervention");
         }
         if(++report>=250){
             portENTER_CRITICAL(&mux);__typeof__(readings) s=readings;size_t samples=history_log.sample_count,events=history_log.event_count,raw_count=history_log.raw_count;portEXIT_CRITICAL(&mux);
-            ESP_LOGI("sensors","GPIO17 raw=%d mv=%d valid=%d; GPIO18 raw=%d mv=%d valid=%d; CLIP manual=%d limit=%d count=%u; history=%u events=%u raw_window=%u",s.raw[0],s.mv[0],s.valid[0],s.raw[1],s.mv[1],s.valid[1],s.manual,s.threshold,s.clips,(unsigned)samples,(unsigned)events,(unsigned)raw_count);
+            ESP_LOGI("sensors","GPIO17 raw=%d mv=%d valid=%d; GPIO18 raw=%d mv=%d valid=%d; CLIP relative60s=%d limit=%.1f count=%u; history=%u events=%u raw_window=%u",s.raw[0],s.mv[0],s.valid[0],s.raw[1],s.mv[1],s.valid[1],s.clip_ready,s.threshold,s.clips,(unsigned)samples,(unsigned)events,(unsigned)raw_count);
             report=0;
         }
-        vTaskDelay(pdMS_TO_TICKS(20));
+        vTaskDelayUntil(&cadence,pdMS_TO_TICKS(20));
     }
 }
 void telemetry_start(void) {
+    thermal_observer_init(&observer,27.8);
     monitor_log_event(&history_log,esp_timer_get_time()/1000,MONITOR_STARTED,0);
     nvs_handle_t store;
     if(nvs_open("sensors",NVS_READONLY,&store)==ESP_OK){
-        int32_t value;if(nvs_get_i32(store,"ldr_dark",&value)==ESP_OK)readings.dark=value;
-        if(nvs_get_i32(store,"ldr_lit",&value)==ESP_OK)readings.lit=value;
-        if(nvs_get_i32(store,"ldr_limit",&value)==ESP_OK&&value>=1&&value<=4075)readings.threshold=value;
-        if(nvs_get_i32(store,"ldr_manual",&value)==ESP_OK)readings.manual=value!=0;
+        int32_t value;if(nvs_get_i32(store,"ambient_centi",&value)==ESP_OK&&value>=0&&value<=6000)thermal_observer_init(&observer,value/100.);
         nvs_close(store);
-        if(readings.dark>4095||readings.lit>4095){readings.dark=-1;readings.lit=-1;}
     }
     const adc_oneshot_unit_init_cfg_t unit={.unit_id=ADC_UNIT_2};
     esp_err_t err=adc_oneshot_new_unit(&unit,&adc);
@@ -143,11 +156,11 @@ static esp_err_t history_get(httpd_req_t *r){
     return writer.error==ESP_OK?httpd_resp_send_chunk(r,NULL,0):writer.error;
 }
 static esp_err_t get(httpd_req_t *r) {
-    portENTER_CRITICAL(&mux);__typeof__(readings) s=readings;portEXIT_CRITICAL(&mux);
+    portENTER_CRITICAL(&mux);__typeof__(readings) s=readings;thermal_observer_t estimate=observer;portEXIT_CRITICAL(&mux);
     int64_t now=esp_timer_get_time();
     bool valid[2]={s.valid[0]&&now-s.sampled[0]<500000,s.valid[1]&&now-s.sampled[1]<500000};
     double resistance=0,temp=0;bool temperature_ok=valid[1]&&s.mv[1]>=0&&telemetry_ntc_estimate(s.mv[1],&resistance,&temp);
-    bool ldr_ready=s.manual||calibrated_ldr(s.dark,s.lit);
+    bool ldr_ready=s.clip_ready;
     cJSON *o=cJSON_CreateObject();cJSON_AddNumberToObject(o,"uptime_ms",now/1000);cJSON_AddBoolToObject(o,"automatic_protection",false);
     cJSON_AddBoolToObject(o,"bluetooth_mode",source_control_ready());
     cJSON *t=cJSON_AddObjectToObject(o,"temperature");
@@ -155,22 +168,36 @@ static esp_err_t get(httpd_req_t *r) {
     add_nullable(t,"celsius",temperature_ok,temp);add_nullable(t,"resistance_ohm",temperature_ok,resistance);
     add_nullable(t,"raw",valid[1],s.raw[1]);add_nullable(t,"millivolts",valid[1]&&s.mv[1]>=0,s.mv[1]);
     cJSON_AddNumberToObject(t,"gpio",18);cJSON_AddNumberToObject(t,"beta",3950);
+    cJSON *coil=cJSON_AddObjectToObject(o,"coil");
+    bool fresh=estimate.initialized&&now/1000-estimate.last_ms<2500;
+    bool coil_valid=temperature_ok&&fresh&&estimate.valid;
+    cJSON_AddStringToObject(coil,"model","joint_v2_ntc_observer");
+    cJSON_AddStringToObject(coil,"status",coil_valid?"estimated":fresh?"warming_up":"unavailable");
+    add_nullable(coil,"celsius",coil_valid,estimate.coil);
+    add_nullable(coil,"ntc_mean10_c",temperature_ok&&fresh&&estimate.count==10,estimate.mean);
+    cJSON_AddNumberToObject(coil,"ambient_c",estimate.ambient);
+    cJSON_AddNumberToObject(coil,"samples",estimate.count);
     cJSON *c=cJSON_AddObjectToObject(o,"clip");
-    cJSON_AddStringToObject(c,"status",!valid[0]?"unavailable":s.manual?"provisional":ldr_ready?"ok":"uncalibrated");
+    cJSON_AddStringToObject(c,"status",!valid[0]?"unavailable":ldr_ready?"ok":"warming_up");
     if(valid[0]&&ldr_ready)cJSON_AddBoolToObject(c,"active",s.last_clip>0&&now-s.last_clip<2000000);else cJSON_AddNullToObject(c,"active");
     add_nullable(c,"raw",valid[0],s.raw[0]);add_nullable(c,"millivolts",valid[0]&&s.mv[0]>=0,s.mv[0]);
-    add_nullable(c,"count",ldr_ready,s.clips);add_nullable(c,"dark_reference",s.dark>=0,s.dark);add_nullable(c,"lit_reference",s.lit>=0,s.lit);
-    int hysteresis=s.manual?20:2*((s.dark-s.lit)/10),threshold=s.manual?s.threshold:(s.dark+s.lit)/2-(s.dark-s.lit)/10;
-    cJSON_AddNumberToObject(c,"gpio",17);cJSON_AddBoolToObject(c,"manual",s.manual);cJSON_AddNumberToObject(c,"threshold",threshold);cJSON_AddNumberToObject(c,"hysteresis",hysteresis);return send_json(r,o);
+    cJSON_AddNumberToObject(c,"count",s.clips);
+    add_nullable(c,"baseline_raw",valid[0]&&s.baseline>=1,s.baseline);
+    add_nullable(c,"threshold",valid[0]&&ldr_ready,s.threshold);
+    add_nullable(c,"release_raw",valid[0]&&ldr_ready,s.release);
+    cJSON_AddStringToObject(c,"mode","relative");cJSON_AddNumberToObject(c,"window_ms",CLIP_WINDOW_MS);cJSON_AddNumberToObject(c,"edge_window_ms",CLIP_EDGE_MS);cJSON_AddNumberToObject(c,"min_low_samples",CLIP_MIN_LOW_SAMPLES);cJSON_AddNumberToObject(c,"sustained_samples",CLIP_SUSTAINED_SAMPLES);
+    cJSON_AddNumberToObject(c,"drop_percent",CLIP_DROP_PERCENT);cJSON_AddNumberToObject(c,"release_drop_percent",CLIP_RELEASE_DROP_PERCENT);
+    cJSON_AddNumberToObject(c,"gpio",17);return send_json(r,o);
 }
 static esp_err_t raw_capture(httpd_req_t *r){
     monitor_log_t *snapshot=malloc(sizeof(*snapshot));
     if(!snapshot)return fail(r,"503 Service Unavailable","Memoria indisponivel para captura");
-    portENTER_CRITICAL(&mux);memcpy(snapshot,&history_log,sizeof(*snapshot));portEXIT_CRITICAL(&mux);
+    portENTER_CRITICAL(&mux);memcpy(snapshot,&history_log,sizeof(*snapshot));double trigger=readings.threshold;bool ready=readings.clip_ready;portEXIT_CRITICAL(&mux);
     uint64_t now=esp_timer_get_time()/1000;
     httpd_resp_set_type(r,"application/json");httpd_resp_set_hdr(r,"Cache-Control","no-store");
-    history_writer_t writer={.req=r,.error=ESP_OK};char entry[128];
-    snprintf(entry,sizeof(entry),"{\"uptime_ms\":%llu,\"window_ms\":2000,\"sample_interval_ms\":20,\"samples\":[",(unsigned long long)now);history_write(&writer,entry);
+    history_writer_t writer={.req=r,.error=ESP_OK};char entry[256],limit[24];
+    if(ready)snprintf(limit,sizeof(limit),"%.2f",trigger);else strcpy(limit,"null");
+    snprintf(entry,sizeof(entry),"{\"uptime_ms\":%llu,\"window_ms\":2000,\"sample_interval_ms\":20,\"threshold\":%s,\"samples\":[",(unsigned long long)now,limit);history_write(&writer,entry);
     bool first=true;
     for(size_t i=0;i<snapshot->raw_count&&writer.error==ESP_OK;i++){
         const monitor_raw_t *s=monitor_log_raw_at(snapshot,i);if(now>s->at_ms&&now-s->at_ms>2000)continue;
@@ -182,39 +209,29 @@ static esp_err_t raw_capture(httpd_req_t *r){
     ESP_LOGI("sensors","Served frozen 2-second RAW capture");
     return writer.error==ESP_OK?httpd_resp_send_chunk(r,NULL,0):writer.error;
 }
-static esp_err_t calibrate(httpd_req_t *r) {
-    char header[8];if(httpd_req_get_hdr_value_str(r,"X-BLDSP",header,sizeof(header))!=ESP_OK||strcmp(header,"1"))return fail(r,"403 Forbidden","Cabecalho ausente");
+static esp_err_t legacy_ldr_config(httpd_req_t *r){
+    return fail(r,"410 Gone","CLIP agora usa queda maior que 20% da media movel de 60 segundos; limiar fixo removido");
+}
+static esp_err_t thermal_config(httpd_req_t *r){
+    char header[8],body[65];
+    if(httpd_req_get_hdr_value_str(r,"X-BLDSP",header,sizeof(header))!=ESP_OK||strcmp(header,"1"))return fail(r,"403 Forbidden","Cabecalho ausente");
     if(r->content_len<1||r->content_len>64)return fail(r,"400 Bad Request","Corpo invalido");
-    char body[65];int got=0;while(got<r->content_len){int n=httpd_req_recv(r,body+got,r->content_len-got);if(n<=0)return ESP_FAIL;got+=n;}body[got]=0;
-    cJSON *o=cJSON_Parse(body),*limit=cJSON_GetObjectItemCaseSensitive(o,"threshold");
-    if(limit){
-        bool valid=cJSON_IsNumber(limit)&&limit->valuedouble>=1&&limit->valuedouble<=4075&&limit->valuedouble==limit->valueint;
-        int threshold=valid?limit->valueint:0;cJSON_Delete(o);
-        if(!valid)return fail(r,"400 Bad Request","Limiar deve ser inteiro entre 1 e 4075");
-        nvs_handle_t store;esp_err_t err=nvs_open("sensors",NVS_READWRITE,&store);
-        if(err!=ESP_OK)return fail(r,"500 Internal Server Error","Falha ao salvar limiar");
-        err=nvs_set_i32(store,"ldr_limit",threshold);if(err==ESP_OK)err=nvs_set_i32(store,"ldr_manual",1);if(err==ESP_OK)err=nvs_commit(store);nvs_close(store);
-        if(err!=ESP_OK)return fail(r,"500 Internal Server Error","Falha ao salvar limiar");
-        portENTER_CRITICAL(&mux);readings.threshold=threshold;readings.manual=true;readings.led_on=false;readings.last_clip=0;readings.debounce=0;portEXIT_CRITICAL(&mux);
-        ESP_LOGI("sensors","Provisional manual CLIP raw<%d, release>=%d, 20 ms acquisition",threshold,threshold+20);return get(r);
-    }
-    cJSON *v=cJSON_GetObjectItemCaseSensitive(o,"state");
-    bool dark=cJSON_IsString(v)&&!strcmp(v->valuestring,"off"),lit=cJSON_IsString(v)&&!strcmp(v->valuestring,"on");cJSON_Delete(o);
-    if(!dark&&!lit)return fail(r,"400 Bad Request","Escolha off ou on");
-    portENTER_CRITICAL(&mux);__typeof__(readings) s=readings;portEXIT_CRITICAL(&mux);
-    if(!s.valid[0]||esp_timer_get_time()-s.sampled[0]>250000)return fail(r,"503 Service Unavailable","Sem leitura recente do LDR");
-    int new_dark=dark?s.raw[0]:s.dark,new_lit=lit?s.raw[0]:s.lit;
-    if(new_dark>=0&&new_lit>=0&&!calibrated_ldr(new_dark,new_lit))return fail(r,"400 Bad Request","LED aceso deve reduzir a leitura em pelo menos 100 pontos; refaca as referencias");
+    int got=0;while(got<r->content_len){int n=httpd_req_recv(r,body+got,r->content_len-got);if(n<=0)return ESP_FAIL;got+=n;}body[got]=0;
+    cJSON *o=cJSON_Parse(body),*v=cJSON_GetObjectItemCaseSensitive(o,"ambient_c");
+    bool ok=cJSON_IsNumber(v)&&isfinite(v->valuedouble)&&v->valuedouble>=0&&v->valuedouble<=60;
+    int centi=ok?(int)lround(v->valuedouble*100):0;cJSON_Delete(o);
+    if(!ok)return fail(r,"400 Bad Request","Ambiente deve ficar entre 0 e 60 graus");
     nvs_handle_t store;esp_err_t err=nvs_open("sensors",NVS_READWRITE,&store);
-    if(err!=ESP_OK)return fail(r,"500 Internal Server Error","Falha ao salvar calibracao");
-    err=nvs_set_i32(store,dark?"ldr_dark":"ldr_lit",s.raw[0]);if(err==ESP_OK&&calibrated_ldr(new_dark,new_lit))err=nvs_set_i32(store,"ldr_manual",0);if(err==ESP_OK)err=nvs_commit(store);nvs_close(store);
-    if(err!=ESP_OK)return fail(r,"500 Internal Server Error","Falha ao salvar calibracao");
-    portENTER_CRITICAL(&mux);readings.dark=new_dark;readings.lit=new_lit;if(calibrated_ldr(new_dark,new_lit))readings.manual=false;readings.led_on=false;readings.last_clip=0;readings.debounce=0;monitor_log_event(&history_log,esp_timer_get_time()/1000,dark?MONITOR_CAL_OFF:MONITOR_CAL_ON,s.raw[0]);portEXIT_CRITICAL(&mux);
-    ESP_LOGI("sensors","LDR reference %s=%d; calibrated=%d",dark?"off":"on",s.raw[0],calibrated_ldr(new_dark,new_lit));return get(r);
+    if(err==ESP_OK){err=nvs_set_i32(store,"ambient_centi",centi);if(err==ESP_OK)err=nvs_commit(store);nvs_close(store);}
+    if(err!=ESP_OK)return fail(r,"500 Internal Server Error","Falha ao salvar ambiente");
+    portENTER_CRITICAL(&mux);thermal_observer_init(&observer,centi/100.);portEXIT_CRITICAL(&mux);
+    ESP_LOGI("thermal_observer","Ambient set %.2f C; observer restarted",centi/100.);return get(r);
 }
 void telemetry_register(httpd_handle_t server){
+    const httpd_uri_t thermal={.uri="/api/telemetry/thermal",.method=HTTP_POST,.handler=thermal_config};
+    ESP_ERROR_CHECK(httpd_register_uri_handler(server,&thermal));
     const httpd_uri_t read={.uri="/api/telemetry",.method=HTTP_GET,.handler=get};
-    const httpd_uri_t cal={.uri="/api/telemetry/ldr",.method=HTTP_POST,.handler=calibrate};
+    const httpd_uri_t cal={.uri="/api/telemetry/ldr",.method=HTTP_POST,.handler=legacy_ldr_config};
     const httpd_uri_t history={.uri="/api/telemetry/history",.method=HTTP_GET,.handler=history_get};
     const httpd_uri_t capture={.uri="/api/telemetry/ldr/capture",.method=HTTP_GET,.handler=raw_capture};
     ESP_ERROR_CHECK(httpd_register_uri_handler(server,&read));ESP_ERROR_CHECK(httpd_register_uri_handler(server,&cal));ESP_ERROR_CHECK(httpd_register_uri_handler(server,&history));

@@ -8,3 +8,5 @@ void status_led_source_error(bool failed);
 void status_led_bootstrap(bool success);
 void status_led_request_begin(void);
 void status_led_request_end(uint8_t module,bool success);
+// Confirmed events extend the visual indication; false lets its hold expire.
+void status_led_clip(bool active);

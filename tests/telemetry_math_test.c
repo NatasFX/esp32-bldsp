@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include "telemetry_math.h"
 int main(void){
-    assert(telemetry_ldr_active(449,false,450,20));assert(!telemetry_ldr_active(450,false,450,20));
-    assert(telemetry_ldr_active(469,true,450,20));assert(!telemetry_ldr_active(470,true,450,20));
     double r,t;
     assert(telemetry_ntc_estimate(1650,&r,&t));assert(fabs(r-10000)<0.001);assert(fabs(t-25)<0.001);
     assert(telemetry_ntc_estimate(1000,&r,&t));assert(r<10000&&t>25);

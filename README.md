@@ -1,6 +1,6 @@
 # BLDSP Control — ESP32-S3 + USB host
 
-Projeto inicial ESP-IDF **5.4.2**, ESP32-S3 N16R8, para BLenhance2.1 / BP1048B2. Firmware da placa medido: ACP 0.0.4, efeitos 1.35.1. Não depende de PSRAM nesta versão.
+Firmware ESP-IDF **5.4.x** (build validado com v5.4-dev), ESP32-S3 N16R8, para BLenhance2.1 / BP1048B2. Firmware da placa medido: ACP 0.0.4, efeitos 1.35.1. Não depende de PSRAM nesta versão.
 
 ## Uso
 
@@ -14,7 +14,7 @@ Projeto inicial ESP-IDF **5.4.2**, ESP32-S3 N16R8, para BLenhance2.1 / BP1048B2.
 
 ## Interface
 
-Evolução planejada: [roadmap de telemetria e proteção](docs/roadmap_telemetria_protecao.md), com VCC, NTCs, monitoramento no celular, isolamento USB, clipping, corrente e supervisor local de proteção. São propostas; sensores e proteções ainda não estão implementados.
+Evolução planejada: [roadmap de telemetria e proteção](docs/roadmap_telemetria_protecao.md), com VCC, NTCs, monitoramento no celular, isolamento USB, clipping, corrente e supervisor local de proteção. NTC, estimativa da bobina, LDR e indicação visual já estão implementados; as proteções automáticas continuam como propostas.
 
 - Abas estéreo (Music Pre EQ **0x91 / aba 2**) e subwoofer (Rec Pre EQ **0x93 / aba 4**). O encaminhamento físico do estéreo ainda precisa de confirmação na bancada.
 - Quatro botões de preset imediatamente abaixo das abas. Cada preset guarda as duas saídas. Trocar de preset descarta edições não salvas sem confirmação, carrega e aplica automaticamente ambos os EQs. Reset apaga o slot salvo e aplica EQ plano com pré-ganho 0 às duas saídas.
@@ -29,11 +29,13 @@ Evolução planejada: [roadmap de telemetria e proteção](docs/roadmap_telemetr
 
 ## Monitoramento
 
-Aba com NTC no GPIO18 (estimativa 10 kΩ/B3950), LDR no LED CLIP no GPIO17, histórico e eventos guardados na RAM do ESP mesmo sem celular (300 amostras e 64 eventos), média/mínima/máxima e calibração óptica salva em NVS. O histórico é limpo ao reiniciar o ESP. Sensores inferiores para GND e pull-ups externos de 10 kΩ para 3V3. [Montagem e limitações](docs/sensores_monitoramento.md). Limiar provisório RAW < 450 ajustável/salvo e captura manual RAW dos últimos 2 s a 20 ms. Somente leitura: não há redução automática de ganho por sensores. A política futura de tolerar pico isolado de ~50 ms e avaliar clipping persistente/recorrente por ~1 s está no roadmap.
+Mostra separadamente **NTC · temperatura lida** e **Bobina · estimada**. O observador `joint_v2` usa apenas o NTC e sua evolução, sem potência informada; média de dez amostras e filtragem reduzem oscilações. Ambiente ajustável, salvo em NVS. O estado da estrutura possui dissipação; testes incluem 72 horas de simulação e reprodução dos dois ensaios. [Modelo, erros e limitações](docs/ensaios/20261116/joint_v2/estudo_v2.md).
+
+Aba com NTC no GPIO18 (estimativa 10 kΩ/B3950), LDR no LED CLIP no GPIO17, histórico e eventos guardados na RAM do ESP mesmo sem celular (300 amostras e 64 eventos), média/mínima/máxima e referência óptica móvel de 60 segundos. O histórico é limpo ao reiniciar o ESP. Sensores inferiores para GND e pull-ups externos de 10 kΩ para 3V3. [Montagem e limitações](docs/sensores_monitoramento.md). Detecção por pulso: referência móvel RAW de 60 s, descida e subida rápidas (até 60 ms) e pelo menos duas amostras abaixo de 80% da referência. Mais de 30 amostras baixas consecutivas, após descida válida, confirma CLIP sustentado sem esperar recuperação. Forma referência por 60 s após iniciar ou perder leituras. RGB pisca vermelho a 4 Hz, com retenção visual de 2 s; sem controle de ganho. Captura manual RAW dos últimos 2 s a 20 ms e log serial CLIP_RAW em cada ciclo. [Detalhes](docs/clip_relativo.md). Somente leitura: não há redução automática de ganho por sensores. A política futura de tolerar pico isolado de ~50 ms e avaliar clipping persistente/recorrente por ~1 s está no roadmap.
 
 ## LED RGB
 
-GPIO48, brilho limitado a 50%: arco-íris quando o controle está operacional; apagado na inicialização e por mais 3 s após os serviços (acendimento gradual em 1 s), amarelo aguardando USB, roxo trocando fonte, ciano sincronizando e vermelho em falha. [Estados e limites](docs/led_status.md).
+GPIO48, brilho limitado a 50%: arco-íris quando o controle está operacional; apagado na inicialização e por mais 3 s após os serviços (acendimento gradual em 1 s), amarelo aguardando USB, roxo trocando fonte, ciano sincronizando vermelho lento em falha e vermelho rápido em CLIP confirmado. [Estados e limites](docs/led_status.md).
 
 ## USB e persistência
 
@@ -45,7 +47,7 @@ Presets: GET/POST `/api/preset?slot=1..4`, blobs versionados na namespace NVS `e
 
 ## Compilar
 
-Instalar ESP-IDF **5.4.2** com alvo S3, abrir seu terminal e executar:
+Instalar ESP-IDF **5.4.x** com alvo S3, abrir seu terminal e executar:
 
 ```powershell
 cd esp32-bldsp
@@ -65,9 +67,9 @@ Usar a USB-UART para programar/depurar e reservar a USB nativa para a BLDSP. Fla
 
 Build completo e gravação no ESP32-S3 confirmados com ESP-IDF v5.4-dev instalado. USB HID, aplicação/leitura dos dois EQs, pré-ganho audível (confirmado pelo usuário) e troca automática de fonte via GPIO2 foram validados. [Registro de bancada](docs/primeiro_teste_esp32.md). Persistência e testes prolongados continuam pendentes. Nada foi gravado no firmware da BLDSP. A prévia da LAN é somente simulação.
 
-## Ensaio térmico
+## Ferramenta de bancada térmica
 
-Em `http://192.168.4.1/thermal-test`: média de dez leituras do NTC, previsão experimental separada, marcações da fonte e referências manuais, até 45 minutos em RAM e exportação CSV/JSON. A serial registra `THERMAL` a 1 Hz mesmo sem abrir a página. [Procedimento e API](docs/ensaio_termico.md), [estudo e previsões antes do teste de 17 V](docs/ensaios/20261116/multinode/estudo_pre17_v1.md). Sem proteção automática.
+Mantida no endereço direto `http://192.168.4.1/thermal-test`, sem aba na navegação principal: média de dez leituras do NTC, previsão experimental separada, marcações da fonte e referências manuais, até 45 minutos em RAM e exportação CSV/JSON. A serial registra `THERMAL` a 1 Hz mesmo sem abrir a página. [Procedimento e API](docs/ensaio_termico.md), [estudo e previsões antes do teste de 17 V](docs/ensaios/20261116/multinode/estudo_pre17_v1.md). Sem proteção automática.
 
 Para converter o arquivo compartilhado do PuTTY em CSV durante o teste, sem abrir a COM7 novamente:
 
@@ -94,6 +96,6 @@ python tests/make_fixture.py
 .\tests\run_native.cmd
 ```
 
-Protocolo C real contra captura binária, truncamentos, enquadramento, limites e preset inicial; script real da interface em DOM/rede/relógio simulados: boot do preset 1, envio automático para ambas as saídas, agrupamento, supressão de valores inválidos, respostas fora do estado atual, controles Q/ganho, duplo toque, presets e isolamento do save. Fórmulas de resposta testadas nos tipos de filtro e valores extremos. Não substituem testes de NVS/USB no dispositivo.
+Protocolo C real contra captura binária, truncamentos, enquadramento, limites e preset inicial; script real da interface em DOM/rede/relógio simulados: boot do preset 1, envio automático para ambas as saídas, agrupamento, supressão de valores inválidos, respostas fora do estado atual, controles Q/ganho, duplo toque, presets e isolamento do save. Fórmulas de resposta testadas nos tipos de filtro e valores extremos. Inclui também reprodução C/Python dos dois ensaios térmicos, simulação longa do observador, pulsos CLIP curtos/sustentados, rejeição de lanterna lenta e recuperação de falhas de leitura. Não substituem testes de NVS/USB no dispositivo.
 
 USB host: https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32s3/api-reference/peripherals/usb_host.html

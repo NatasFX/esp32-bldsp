@@ -1,6 +1,6 @@
 # Ensaio térmico e aquisição serial
 
-Abra `http://192.168.4.1/thermal-test`, ou o novo link **Ensaio térmico** no topo do front. O modelo `pre17_v1` foi fixado usando apenas o primeiro vídeo; [estudo, equações e previsões anteriores ao segundo teste](ensaios/20261116/multinode/estudo_pre17_v1.md).
+Ferramenta de bancada no endereço direto `http://192.168.4.1/thermal-test`, sem aba na navegação principal. A previsão DC usa o modelo `joint_v2`, ajustado aos dois ensaios. O monitoramento normal possui um observador separado que estima a bobina apenas pelo NTC. [Modelo atual e limitações](ensaios/20261116/joint_v2/estudo_v2.md). O [estudo pre17_v1](ensaios/20261116/multinode/estudo_pre17_v1.md) foi preservado como referência histórica anterior ao segundo teste.
 
 ## Aquisição
 
@@ -8,7 +8,7 @@ Abra `http://192.168.4.1/thermal-test`, ou o novo link **Ensaio térmico** no to
 - Uma amostra por segundo, média móvel de dez leituras de temperatura. Leituras inválidas ou lacunas acima de 2,5 s reiniciam a janela; a contagem aparece na tela.
 - Serial 115200, uma linha `THERMAL` por segundo, mesmo sem iniciar registro no front: uptime, validade, °C, média, contagem, RAW, mV, sessão, fase e previsões quando disponíveis. São médias temporais de 1 Hz, não dez conversões consecutivas do ADC.
 - Ensaio em RAM do ESP: até 2.700 amostras / aproximadamente 45 min, com alternativa de 1.800 / 30 min se a primeira alocação falhar. Cheio, o registro para preservando os dados. Até 96 marcações. A aquisição não depende da página aberta.
-- CSV e JSON podem ser baixados após reabrir a página. Reiniciar o ESP perde a RAM; iniciar novo ensaio substitui o anterior. Calibração LDR e presets continuam no NVS.
+- CSV e JSON podem ser baixados após reabrir a página. Reiniciar o ESP perde a RAM; iniciar novo ensaio substitui o anterior. Ambiente e presets continuam no NVS; a referência móvel do LDR é reconstruída após o boot.
 - As marcações de fonte são apenas registros: o front não aciona a fonte nem muda o ganho do DSP.
 
 ## Procedimento
@@ -19,7 +19,7 @@ Abra `http://192.168.4.1/thermal-test`, ou o novo link **Ensaio térmico** no to
 4. Gravar o hotspot da bobina. Registrar manualmente tensão/corrente observadas e temperaturas de câmera/segunda sonda em momentos identificáveis. Essas referências são evidências; não reajustam a previsão durante o teste.
 5. Desligar fisicamente e marcar **fonte desligada**. Continuar registrando o resfriamento. Encerrar o registro e exportar antes de reiniciar. Trechos curtos também permitem validar o início da curva.
 
-O modelo prevê o ensaio DC estacionário com a mesma fiação. Não mede potência real automaticamente, não infere a temperatura da bobina apenas do NTC e não está validado com música/ventilação. O resíduo do NTC compara a média medida com a média das previsões nos mesmos registros. Uma lacuna de integração maior que cinco segundos invalida a previsão da sessão.
+O modelo prevê o ensaio DC estacionário com a mesma fiação. Não mede potência real automaticamente, usa a tensão informada e não está validado com música/ventilação. O cartão de bobina do monitoramento normal usa outro caminho: o observador inverso pelo NTC. O resíduo do NTC compara a média medida com a média das previsões nos mesmos registros. Uma lacuna de integração maior que cinco segundos invalida a previsão da sessão.
 
 ## API
 
@@ -38,3 +38,7 @@ O dispositivo conserva apenas buffers limitados. Não aloca uma árvore JSON por
 ## Ambiente e estados iniciais separados
 
 Atualização de 16/11: ambiente informado de 27,8 °C e NTC perto de 30 °C. O campo de ambiente é independente da média inicial do sensor. Hotspot inicial opcional; se ausente, bobina inicial aproximada pela média do NTC. O modelo inicia `n0 = Tntc0 − Ta` e `H0 = max(0, n0 − wc × (Tc0 − Ta))`, supondo o sensor aproximadamente estável. A diferença pode ter outras causas e não identifica sozinha a temperatura da estrutura. Os parâmetros congelados permanecem iguais. JSON e CSV exportam `initial_coil_c` e `initial_ntc_c`. [Previsões atualizadas](ensaios/20261116/multinode/atualizacao_ambiente278_ntc30.md).
+
+## Ajuste conjunto posterior aos dois ensaios
+
+O [estudo v2](ensaios/20261116/joint_v2/estudo_v2.md) usa ambos os vídeos e inclui testes de estabilidade por 72 horas e erro inicial da estrutura. É calibração conjunta, preservando a [validação independente v1](ensaios/20261116/validation17/validacao_17v.md). O firmware agora usa v2. A página de ensaio mantém a previsão por tensão; o monitoramento normal possui um observador separado que estima a bobina apenas pelo NTC, sem potência informada. O estudo descreve erros, estabilidade, filtragem e limitações.
