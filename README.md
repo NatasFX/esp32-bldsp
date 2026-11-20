@@ -1,6 +1,41 @@
-# BLDSP Control — ESP32-S3 + USB host
+# BLDSP Control
 
-Firmware ESP-IDF **5.4.x** (build validado com v5.4-dev), ESP32-S3 N16R8, para BLenhance2.1 / BP1048B2. Firmware da placa medido: ACP 0.0.4, efeitos 1.35.1. Não depende de PSRAM nesta versão.
+**Controle pelo celular o equalizador de uma placa de áudio Bluetooth 2.1, sem interromper a música.**
+
+O BLDSP Control transforma um **ESP32-S3** em uma ponte entre o navegador do celular e a placa **BL Enhance 2.1 / BP1048B2**. Você conecta o celular ao Wi-Fi do ESP e abre o portal para ajustar o subwoofer e o estéreo, visualizar a curva dos filtros e salvar presets. O áudio continua indo diretamente do celular para a BLDSP por Bluetooth.
+
+Além da equalização, o projeto monitora temperatura e clipping e pode reduzir automaticamente o ganho do sub quando há CLIP recorrente. Um **ESP32-C3 opcional** acrescenta cinco potenciômetros físicos e uma fita LED para indicar ajustes, conexão e alertas.
+
+```text
+Celular ── Bluetooth / música ───────────────► BLDSP ──► Amplificador
+   └────── Wi-Fi / portal ──► ESP32-S3 ── USB ──┘
+                                ⇅ ESP-NOW
+                         ESP32-C3 opcional
+                         5 potenciômetros + LEDs
+```
+
+Não precisa de APK, internet ou computador durante o uso. Os presets ficam salvos no ESP32.
+
+## Veja a interface
+
+Capturas do próprio portal em formato de celular, geradas na prévia local com dados simulados. O painel aparece sem C3 conectado. Clique nas imagens para ampliar.
+
+<table>
+<tr><th>Equalizador</th><th>Monitoramento</th><th>Painel físico</th></tr>
+<tr>
+<td><a href="docs/images/equalizador-mobile.png"><img src="docs/images/equalizador-mobile.png" width="280" alt="Equalizador do subwoofer com presets, pré-ganho e gráfico de resposta"></a></td>
+<td><a href="docs/images/monitoramento-mobile.png"><img src="docs/images/monitoramento-mobile.png" width="280" alt="Temperatura lida pelo NTC, estimativa da bobina e monitoramento de clipping"></a></td>
+<td><a href="docs/images/painel-mobile.png"><img src="docs/images/painel-mobile.png" width="280" alt="Configuração de funções e diagnóstico dos potenciômetros do painel C3"></a></td>
+</tr>
+</table>
+
+- **Equalizador:** filtros por saída, gráfico de resposta, pré-ganho e quatro presets.
+- **Monitoramento:** NTC, estimativa da temperatura da bobina, histórico e proteção por CLIP.
+- **Painel:** mapeamento dos potenciômetros, paletas de LED e programação do brilho por horário.
+
+## Hardware e firmware
+
+ESP32-S3 N16R8 com USB host, firmware ESP-IDF **5.4.x** (build validado com v5.4-dev). Placa utilizada: BL Enhance 2.1 / BP1048B2, ACP 0.0.4, efeitos 1.35.1. O painel remoto usa ESP32-C3 e comunicação ESP-NOW. Não depende de PSRAM nesta versão.
 
 ## Uso
 
