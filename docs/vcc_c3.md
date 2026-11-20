@@ -6,7 +6,7 @@ GPIO5 (ADC2 canal 0) do C3, leitura única a cada segundo, tarefa independente d
 
 VCC -> resistor 68 kΩ 1% -> GPIO5 -> dois resistores 10 kΩ 1% em paralelo (5 kΩ) -> GND do C3. Capacitor de 100 nF entre GPIO5 e GND, perto do ESP. A referência GND deve ser comum à alimentação medida. O divisor não protege contra transientes automotivos: sua proteção deve ser dimensionada antes de uso definitivo no carro. Não aplicar VCC diretamente ao GPIO.
 
-Conversão atual provisória: Ventrada = 27,2 × VGPIO − 43,7472 (offset ancorado após instalar o segundo 10k). Ela considera o pull-up equivalente da placa e os dois resistores inferiores em paralelo. Estimativas em mV reportados pelo ADC: 10 V -> 1,976 V; 15 V -> 2,160 V; 16 V -> 2,197 V. Faixa útil esperada do ADC: até cerca de 2,5 V, atenuação de 12 dB.
+Conversão atual: Ventrada = 31,109896348 × VADC − 51,442480079 (ajuste de quatro pontos, faixa conferida 8–13 V). Ela considera o pull-up equivalente da placa e os dois resistores inferiores em paralelo. Tensões fora de 8–13 V ainda são extrapolação. Faixa útil esperada do ADC: até cerca de 2,5 V, atenuação de 12 dB.
 
 ## Limitação conhecida
 
@@ -29,3 +29,9 @@ Adicionar outro 10k para GND altera a carga: a nova inversão é Vin=(1/a+68000/
 Após instalar o segundo 10k: usuário mediu 1,948 V no GPIO com Vin=10 V. Porém o ADC2 passou a retornar RAW=0/mV=0 com ESP_OK durante cinco leituras, duração 115–123 µs. A conversão não foi ajustada com esses dados inválidos. S3 rejeita RAW 0 e 4095, retorna volts=null e indica leitura inválida no portal. Precisa reiniciar o C3 e investigar repetibilidade; não há precisão validada nesta condição.
 
 Após reiniciar o C3, leituras retornaram: 1978,1978,1973,1972,1978 mV (média 1975,8), 40–41 µs. Usuário confirmou entrada de 10 V e multímetro no GPIO de 1,948 V. Offset atualizado usando 1976 mV do ADC e Vin=10 V, mantendo inclinação estimada 27,2: Vin=27,2*VADC-43,7472. Validação de inclinação em segundo ponto pendente.
+
+## Ajuste de quatro pontos após a montagem
+
+Referência/valor mostrado pela fórmula anterior: 8/8,23; 11/10,84; 12/11,71; 13/12,61 V. Regressão linear: novo=1,1437461893*antigo-1,4067867880. Composta com a conversão anterior: novo=31,109896348*VADC-51,442480079. Resíduos nos pontos de ajuste: +0,0062; -0,0086; -0,0135; +0,0159 V. São resíduos do ajuste, não erro garantido de medição. Leitura amostrada após relato: 2071–2073mV, 40–45µs, compatível com ponto de 13V.
+
+Usuário relatou nova saturação sem alterar a montagem, recuperada por reinício do C3. Isso mostra que o problema não pode ser atribuído somente à solda energizada. Calibração não corrige instabilidade do ADC2; os rails permanecem rejeitados, sem reset automático do painel.

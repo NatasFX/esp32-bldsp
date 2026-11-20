@@ -4,9 +4,11 @@
 #include <stdio.h>
 #include "telemetry_math.h"
 int main(void){
- assert(fabs(vcc_from_mv(1976)-10.)<.03);
- assert(fabs(vcc_from_mv(2160)-15.)<.03);
- assert(fabs(vcc_from_mv(2197)-16.)<.03);
+ // ADC millivolts reconstructed from the four old displayed measurements.
+ assert(fabs(vcc_from_mv(1911)-8.)<.04);
+ assert(fabs(vcc_from_mv(2007)-11.)<.04);
+ assert(fabs(vcc_from_mv(2039)-12.)<.04);
+ assert(fabs(vcc_from_mv(2072)-13.)<.04);
  assert(vcc_from_mv(2000)>vcc_from_mv(1900));
  assert(!vcc_raw_valid(0)&&!vcc_raw_valid(4095)&&vcc_raw_valid(2500));
     double r,t;
