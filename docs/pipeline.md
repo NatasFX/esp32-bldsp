@@ -2,6 +2,10 @@
 
 Comece por este guia. Não é necessário reler os fontes de OTA/build para tarefas rotineiras.
 
+## OTA recomendado após preparação do S3
+
+Conecte ao Wi-Fi BLDSP-Control. `tools/fw.ps1 wireless s3 --wifi-profile BLDSP-Control` (Windows) e `tools/fw.ps1 wireless c3` compilam e enviam pelo portal de produção, sem USB e sem ponte temporária. `--no-build` reutiliza o binário. O S3 precisa da preparação inicial das partições OTA por USB: [guia](ota_s3.md). O caminho `ota` abaixo permanece como alternativa legada por USB.
+
 ## Comandos prontos
 
 Na raiz do repositório, PowerShell:

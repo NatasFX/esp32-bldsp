@@ -18,6 +18,7 @@
 #include "thermal_test.h"
 #include "clip_protection.h"
 #include "panel_control.h"
+#include "s3_ota.h"
 #include "wifi_power.h"
 #include "dns_server.h"
 
@@ -144,7 +145,7 @@ void app_main(void) {
     telemetry_start();
     clip_protection_start();
     panel_start();
-    httpd_config_t cfg=HTTPD_DEFAULT_CONFIG();cfg.max_uri_handlers=48;cfg.stack_size=8192;cfg.recv_wait_timeout=5;cfg.send_wait_timeout=5;
+    httpd_config_t cfg=HTTPD_DEFAULT_CONFIG();cfg.max_uri_handlers=56;cfg.stack_size=8192;cfg.recv_wait_timeout=5;cfg.send_wait_timeout=5;
     httpd_handle_t server;ESP_ERROR_CHECK(httpd_start(&server,&cfg));
     const httpd_uri_t routes[]={
         {.uri="/",.method=HTTP_GET,.handler=root},
@@ -160,6 +161,7 @@ void app_main(void) {
     thermal_test_register(server);
     clip_protection_register(server);
     panel_register(server);
+    s3_ota_register(server);
 #ifdef PANEL_OTA_SMOKE_TEST
     extern void panel_ota_smoke_start(void);
     panel_ota_smoke_start();
@@ -169,5 +171,6 @@ void app_main(void) {
     dns_server_config_t dns = DNS_SERVER_CONFIG_SINGLE("*", "WIFI_AP_DEF");
     if (!start_dns_server(&dns)) ESP_LOGW("portal", "DNS portal unavailable; use http://192.168.4.1/");
     status_led_system_ready();
+    s3_ota_ready();
     ESP_LOGI("bldsp", "Ready: Wi-Fi BLDSP-Control, http://192.168.4.1/; USB host waiting for DSP");
 }

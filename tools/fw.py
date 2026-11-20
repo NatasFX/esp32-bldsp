@@ -80,6 +80,8 @@ def flash(target, port, directory=None, full=False):
         command += ['@flash_args']
     else:
         command += ['--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', '16MB' if target == 's3' else '4MB', '0x10000', app]
+        if target == 's3' and (directory / 'ota_data_initial.bin').exists():
+            command += ['0x910000', 'ota_data_initial.bin']  # USB install selects factory again.
     run('flash-' + target, command, directory)
 
 
@@ -167,6 +169,11 @@ def main():
     p = sub.add_parser('ota', help='C3 OTA through USB-connected S3, then restore S3 production')
     p.add_argument('--port', default='COM7')
     p.add_argument('--prepare-only', action='store_true', help='Build and validate all OTA artifacts without touching devices')
+    p = sub.add_parser('wireless', help='Update S3 or C3 through the production Wi-Fi portal, no USB')
+    p.add_argument('target', choices=('s3', 'c3'))
+    p.add_argument('--host', default='192.168.4.1')
+    p.add_argument('--no-build', action='store_true')
+    p.add_argument('--wifi-profile', help='Windows WLAN profile to reconnect after S3 reboot')
     p = sub.add_parser('logs')
     p.add_argument('--port', default='COM7')
     p.add_argument('--seconds', type=int, default=10)
@@ -180,8 +187,15 @@ def main():
         from serial.tools.list_ports import comports
         for p in comports():
             print(f'{p.device}: {p.description}')
+    elif args.action == 'wireless':
+        from wireless import deploy
+        if not args.no_build:
+            build(args.target)
+        image = ROOT / ('build/bldsp_control.bin' if args.target == 's3' else 'panel-c3/build/bldsp_panel_c3.bin')
+        deploy(args.target, image, args.host, args.wifi_profile)
     elif args.action == 'test':
         run('tests', ['cmd', '/c', 'tests\\run_native.cmd'])
+        run('tests-pipeline', [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-p', '*_test.py'])
     elif args.action == 'logs':
         if not 1 <= args.seconds <= 300:
             parser.error('Use 1..300 seconds per capture')

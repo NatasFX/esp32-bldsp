@@ -89,6 +89,10 @@ Presets: GET/POST `/api/preset?slot=1..4`, blobs versionados na namespace NVS `e
 - Potência Wi-Fi ajustável; padrão de 2 dBm validado para eliminar interferência audível nesta montagem: [diagnóstico](docs/diagnostico_wifi.md).
 - [Histórico de entregas](CHANGELOG.md). Documentos de ensaios e propostas antigas são registros históricos; os guias acima descrevem as funções atuais.
 
+## Atualização sem fio
+
+Conecte ao Wi-Fi do ESP e use os links de atualização do S3/C3 na aba Painel, ou `tools/fw.ps1 wireless s3` / `wireless c3`. [Preparação inicial, confirmação e recuperação](docs/ota_s3.md).
+
 ## Fluxo recomendado de desenvolvimento
 
 Executar na raiz do repositório:
@@ -112,7 +116,7 @@ idf.py build
 idf.py -p COMx flash monitor
 ```
 
-Usar a USB-UART para programar/depurar e reservar a USB nativa para a BLDSP. Flash 16 MB, partição factory de 3 MB, console UART. Portal cativo disponível. O C3 recebe OTA por ESP-NOW através do S3; o S3 é atualizado por USB-UART. Não exige conexão ao roteador.
+Usar a USB-UART para programar/depurar e reservar a USB nativa para a BLDSP. Flash 16 MB, partição factory de 3 MB, console UART. Portal cativo disponível. O C3 recebe OTA por ESP-NOW através do S3; o S3 também recebe OTA por Wi-Fi após preparação inicial por USB. Não exige conexão ao roteador.
 
 ## Bancada e validação pendente
 

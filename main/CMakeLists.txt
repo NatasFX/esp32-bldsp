@@ -7,6 +7,7 @@ idf_component_register(
         "lighting.c"
         "light_policy.c"
         "panel_ota.c"
+        "s3_ota.c"
         "knob_policy.c"
         "dsp_usb.c"
         "protocol.c"
@@ -27,8 +28,8 @@ idf_component_register(
         "thermal_observer.c"
         "thermal_test.c"
     INCLUDE_DIRS "." "../shared"
-    REQUIRES dns_server usb esp_wifi esp_netif esp_event nvs_flash esp_http_server json esp_timer esp_driver_gpio esp_driver_rmt esp_adc
-    EMBED_TXTFILES "panel-update.html" "index.html" "eq-response.js" "thermal-test.html")
+    REQUIRES app_update dns_server usb esp_wifi esp_netif esp_event nvs_flash esp_http_server json esp_timer esp_driver_gpio esp_driver_rmt esp_adc
+    EMBED_TXTFILES "s3-update.html" "panel-update.html" "index.html" "eq-response.js" "thermal-test.html")
 
 # Deployment bridge is built separately by tools/fw.py, never in production.
 if(BLDSP_OTA_BRIDGE_IMAGE)

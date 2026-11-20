@@ -1,5 +1,13 @@
 # Histórico de entregas
 
+## 2026-11-20 — OTA dos dois ESPs pelo Wi-Fi
+
+- S3 com factory preservada, dois bancos OTA de 3MB e rollback de boot; NVS nos endereços originais.
+- Página /s3-update e upload validado por chip, projeto, hash e imagem ESP-IDF.
+- CLI wireless s3/c3 sem COM e sem ponte temporária; reconexão de perfil Wi-Fi opcional no Windows.
+- OTA real C3 confirmado por HTTP/ESP-NOW; S3 alternou factory -> ota_0 -> ota_1 por Wi-Fi e confirmou o boot.
+- Presets e configurações comparados e preservados; testes de cabeçalho e confirmação aprovados.
+
 ## 2026-11-20 — Bateria e mínimos durante CLIP
 
 - ADC2 do C3 com alvo de 10ms, média/mínima por segundo e contagem de amostras válidas/perdidas.

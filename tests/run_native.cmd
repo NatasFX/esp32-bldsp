@@ -75,6 +75,10 @@ cl /nologo /std:c11 /W4 /I..\shared battery_test.c /Fe:battery_test.exe
 if not "%errorlevel%"=="0" exit /b %errorlevel%
 battery_test.exe
 if not "%errorlevel%"=="0" exit /b %errorlevel%
+cl /nologo /std:c11 /W4 /I..\shared firmware_image_test.c /Fe:firmware_image_test.exe
+if not "%errorlevel%"=="0" exit /b %errorlevel%
+firmware_image_test.exe
+if not "%errorlevel%"=="0" exit /b %errorlevel%
 node panel_ota_ui_test.js
 if not "%errorlevel%"=="0" exit /b %errorlevel%
 node ui_test.js
