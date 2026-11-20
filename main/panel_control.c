@@ -53,8 +53,9 @@ static void receive(const esp_now_recv_info_t *info,const uint8_t *data,int len)
     if(panel_ota_receive(data,len))return;
     if(len==sizeof(panel_vcc_t)){
         panel_vcc_t d;memcpy(&d,data,sizeof(d));
-        if(d.magic!=PANEL_MAGIC||d.version!=PANEL_VERSION||d.type!=7||d.valid>1||d.calibrated>1||d.raw>4095)return;
-        portENTER_CRITICAL(&mux);vcc_diagnostics=d;vcc_at=esp_timer_get_time()/1000;portEXIT_CRITICAL(&mux);
+        if(d.magic!=PANEL_MAGIC||d.version!=PANEL_VERSION||d.type!=7||d.valid>1||d.calibrated>1||d.raw>4095||d.recovery_state>2)return;
+        portENTER_CRITICAL(&mux);bool changed=d.boot!=vcc_diagnostics.boot||d.recovery_state!=vcc_diagnostics.recovery_state||d.recoveries!=vcc_diagnostics.recoveries;vcc_diagnostics=d;vcc_at=esp_timer_get_time()/1000;portEXIT_CRITICAL(&mux);
+        if(changed&&d.recovery_state)ESP_LOGW("panel_vcc","C3 recovery state=%u attempts=%lu",d.recovery_state,(unsigned long)d.recoveries);
         ESP_LOGI("panel_vcc","seq=%lu raw=%u mv=%u cal=%u err=%ld read_us=%lu vcc=%.2fV",(unsigned long)d.sequence,d.raw,d.mv,d.calibrated,(long)d.error,(unsigned long)d.duration_us,(d.valid&&vcc_raw_valid(d.raw))?vcc_from_mv(d.mv):NAN);return;
     }
     if(len==sizeof(panel_adc_t)){
@@ -121,6 +122,7 @@ static void worker(void *arg){
             panel_reply_t r={.magic=PANEL_MAGIC,.version=PANEL_VERSION,.type=2,.sequence=sequence,.enabled=config.enabled,.picked_mask=picked,.valid_mask=p.valid_mask,.clip=clip.sustained};
             r.primary_boot=primary_boot;r.uptime_ms=(uint32_t)(esp_timer_get_time()/1000);r.clip_count=clip.count;r.clip_low_ms=clip.low_ms;r.clip=clip.lit;r.sensor_ready=clip.ready;
             r.led_count=strip.count;r.led_brightness=lighting_brightness(strip.brightness);r.led_mode=strip.mode;r.led_enabled=strip.enabled;r.reserved[0]=strip.palette;
+            portENTER_CRITICAL(&mux);if(vcc_diagnostics.boot==p.boot)r.reserved[1]=vcc_diagnostics.recovery_state;portEXIT_CRITICAL(&mux);
             for(int i=0;i<5;i++)r.gain_q8[i]=current_gain[i];
             esp_now_send(panel_remote_mac,(uint8_t*)&r,sizeof(r));reply_at=now;
         }
@@ -160,7 +162,7 @@ void panel_add_status(cJSON *root){
     cJSON_AddStringToObject(p,"error",error==ESP_OK?"":esp_err_to_name(error));
     portENTER_CRITICAL(&mux);panel_vcc_t vd=vcc_diagnostics;uint64_t va=vcc_at;portEXIT_CRITICAL(&mux);
     bool vf=last&&now-last<1500&&va&&now-va<2500&&vd.boot==boot;
-    cJSON *v=cJSON_AddObjectToObject(p,"vcc");cJSON_AddBoolToObject(v,"fresh",vf);cJSON_AddBoolToObject(v,"valid",vf&&vd.valid&&vcc_raw_valid(vd.raw));
+    cJSON *v=cJSON_AddObjectToObject(p,"vcc");cJSON_AddNumberToObject(v,"recovery_state",vf?vd.recovery_state:0);cJSON_AddNumberToObject(v,"recoveries",vd.recoveries);cJSON_AddBoolToObject(v,"fresh",vf);cJSON_AddBoolToObject(v,"valid",vf&&vd.valid&&vcc_raw_valid(vd.raw));
     cJSON_AddBoolToObject(v,"calibrated",vd.calibrated);cJSON_AddNumberToObject(v,"raw",vd.raw);cJSON_AddNumberToObject(v,"mv",vd.mv);
     if(vf&&vd.valid&&vcc_raw_valid(vd.raw))cJSON_AddNumberToObject(v,"volts",vcc_from_mv(vd.mv));else cJSON_AddNullToObject(v,"volts");cJSON_AddNumberToObject(v,"duration_us",vd.duration_us);
     cJSON_AddStringToObject(v,"error",vf?(!vcc_raw_valid(vd.raw)?"ADC2 no limite da escala; leitura inválida":esp_err_to_name(vd.error)):"Sem amostra recente");

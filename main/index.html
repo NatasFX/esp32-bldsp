@@ -557,7 +557,7 @@ for(let i=0;i<5;i++){
 $('panel-enabled').oninput=()=>{panelEdited=true;};
 function renderPanel(p){
  const v=p?.vcc;
- $('panel-vcc').textContent=v?.valid&&p.online?'VCC '+Number(v.volts).toFixed(2)+' V · ADC '+v.mv+' mV · RAW '+v.raw+' · '+v.duration_us+' µs · '+(v.calibrated?'calibrado':'conversão aproximada'):'Leitura indisponível · '+(v?.error||'aguardando C3');
+ $('panel-vcc').textContent=v?.recovery_state===2?'C3 vai reiniciar para recuperar o ADC2…':v?.recovery_state===1?'Recuperando ADC2 · tentativa '+v.recoveries:v?.valid&&p.online?'VCC '+Number(v.volts).toFixed(2)+' V · ADC '+v.mv+' mV · RAW '+v.raw+' · '+v.duration_us+' µs · '+(v.calibrated?'calibrado':'conversão aproximada'):'Leitura indisponível · '+(v?.error||'aguardando C3');
  if(!p)return;
  $('panel-link').textContent=p.online?'· C3 conectado':'· C3 desconectado';
  $('panel-live-state').textContent=p.online?'Ao vivo · pacote '+(p.sequence??'—')+' · recebido há '+(Number.isFinite(p.age_ms)?Math.round(p.age_ms)+' ms':'—')+(!p.enabled?' · comandos desativados; leituras disponíveis':''):'Sem dados recentes. As últimas leituras ficam esmaecidas.';

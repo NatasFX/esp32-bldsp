@@ -9,6 +9,8 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "esp_random.h"
+#include "esp_system.h"
+#include "vcc_recovery.h"
 #include "nvs_flash.h"
 #include "esp_adc/adc_oneshot.h"
 #include "esp_adc/adc_cali.h"
@@ -41,19 +43,39 @@ static void vcc_worker(void *arg){
     if(setup==ESP_OK)setup=adc_oneshot_config_channel(adc,ADC_CHANNEL_0,&cfg);
     if(setup==ESP_OK)adc_cali_create_scheme_curve_fitting(&ccfg,&cal);
     panel_vcc_t p={.magic=PANEL_MAGIC,.boot=remote_boot,.version=PANEL_VERSION,.type=7};
+    vcc_recovery_t recovery={0};
     while(1){
         vTaskDelay(pdMS_TO_TICKS(1000));
         if(panel_ota_busy())continue;
         int raw=0,mv=0;int64_t start=esp_timer_get_time();
         esp_err_t err=setup==ESP_OK?adc_oneshot_read(adc,ADC_CHANNEL_0,&raw):setup;
         p.duration_us=(uint32_t)(esp_timer_get_time()-start);p.sequence++;
-        p.valid=err==ESP_OK&&raw>=0&&raw<=4095;p.error=err;p.raw=p.valid?raw:0;p.mv=0;p.calibrated=0;
+        p.valid=err==ESP_OK&&raw>0&&raw<4095;p.error=err;p.raw=raw>=0&&raw<=4095?raw:0;p.mv=0;p.calibrated=0;
         if(p.valid){
             p.calibrated=cal&&adc_cali_raw_to_voltage(cal,raw,&mv)==ESP_OK;
             if(!p.calibrated)mv=raw*2500/4095;
             p.mv=mv<0?0:mv>65535?65535:mv;
         }
+        unsigned action=vcc_recovery_step(&recovery,esp_timer_get_time()/1000,p.valid);
+        if(p.valid)p.recovery_state=0;
+        if(action){p.recovery_state=action;p.recoveries++;}
         esp_now_send(panel_primary_mac,(uint8_t*)&p,sizeof(p));
+        if(action==1){
+            ESP_LOGW("vcc","Recreate ADC2 attempt=%lu raw=%d err=%s",(unsigned long)p.recoveries,raw,esp_err_to_name(err));
+            if(adc){setup=adc_oneshot_del_unit(adc);if(setup==ESP_OK)adc=NULL;}
+            if(!adc){setup=adc_oneshot_new_unit(&init,&adc);if(setup==ESP_OK)setup=adc_oneshot_config_channel(adc,ADC_CHANNEL_0,&cfg);}
+        }else if(action==2){
+            // Notify first; S3 echoes state in its reply. Limit wait to one second.
+            uint64_t since=esp_timer_get_time()/1000;bool ack=false;
+            for(int i=0;i<10&&!panel_ota_busy();i++){
+                vTaskDelay(pdMS_TO_TICKS(100));
+                portENTER_CRITICAL(&mux);ack=last_reply>=since&&reply.reserved[1]==2;portEXIT_CRITICAL(&mux);
+                if(ack)break;
+                esp_now_send(panel_primary_mac,(uint8_t*)&p,sizeof(p));
+            }
+            ESP_LOGW("vcc","ADC2 recovery failed; C3 software restart, S3 ack=%u",ack);
+            if(!panel_ota_busy())esp_restart();
+        }
     }
 }
 void app_main(void){

@@ -1,4 +1,5 @@
 #include "vcc_calibration.h"
+#include "../shared/vcc_recovery.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -11,6 +12,14 @@ int main(void){
  assert(fabs(vcc_from_mv(2072)-13.)<.04);
  assert(vcc_from_mv(2000)>vcc_from_mv(1900));
  assert(!vcc_raw_valid(0)&&!vcc_raw_valid(4095)&&vcc_raw_valid(2500));
+    vcc_recovery_t recovery={0};
+    assert(vcc_recovery_step(&recovery,1000,false)==1);
+    assert(vcc_recovery_step(&recovery,2000,false)==0);
+    assert(vcc_recovery_step(&recovery,6000,false)==1);
+    assert(vcc_recovery_step(&recovery,11000,false)==0);
+    assert(vcc_recovery_step(&recovery,30000,false)==2);
+    assert(vcc_recovery_step(&recovery,31000,true)==0&&recovery.attempts==0);
+    assert(vcc_recovery_step(&recovery,32000,false)==1);
     double r,t;
     assert(telemetry_ntc_estimate(1650,&r,&t));assert(fabs(r-10000)<0.001);assert(fabs(t-25)<0.001);
     assert(telemetry_ntc_estimate(1000,&r,&t));assert(r<10000&&t>25);

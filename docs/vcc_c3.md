@@ -35,3 +35,17 @@ Após reiniciar o C3, leituras retornaram: 1978,1978,1973,1972,1978 mV (média 1
 Referência/valor mostrado pela fórmula anterior: 8/8,23; 11/10,84; 12/11,71; 13/12,61 V. Regressão linear: novo=1,1437461893*antigo-1,4067867880. Composta com a conversão anterior: novo=31,109896348*VADC-51,442480079. Resíduos nos pontos de ajuste: +0,0062; -0,0086; -0,0135; +0,0159 V. São resíduos do ajuste, não erro garantido de medição. Leitura amostrada após relato: 2071–2073mV, 40–45µs, compatível com ponto de 13V.
 
 Usuário relatou nova saturação sem alterar a montagem, recuperada por reinício do C3. Isso mostra que o problema não pode ser atribuído somente à solda energizada. Calibração não corrige instabilidade do ADC2; os rails permanecem rejeitados, sem reset automático do painel.
+
+## Recuperação automática do ADC2
+
+RAW=0 ou 4095, erro de conversão ou falha de inicialização dispara recuperação. Como autorizado pelo usuário, os rails são tratados como falha nesta montagem. Primeiro libera/recria somente o handle ADC2 com as APIs públicas do ESP-IDF; isso reconfigura o driver, mas não equivale a cortar sua alimentação física, compartilhada com ADC1. Há duas tentativas locais separadas por pelo menos 5s. Se falhar novamente, C3 avisa o S3 e executa esp_restart(). Não desliga o rádio para tentar medir e não escreve diretamente nos registradores compartilhados.
+
+O relatório tipo 7 inclui recovery_state (0 normal, 1 recriação ADC2, 2 reboot pendente) e contador de ações desde o boot. O S3 registra mudanças, exibe o estado e confirma recebimento no byte reservado 1 do reply. Antes do reboot, C3 repete o aviso por até 1s, aguardando um reply novo com confirmação; reinicia mesmo sem ACK se o principal estiver ausente. Contador e estado não são persistidos em flash. Leituras inválidas não são usadas como tensão.
+
+Intervalo mínimo entre boots por essa recuperação: 30s de uptime. OTA suspende amostragem/recuperação; uma atualização que comece durante o aviso adia o reboot. Reinício do C3 interrompe brevemente seus pots/LEDs e troca o boot ID; o S3 mantém os ganhos durante a desconexão e reassume as posições quando o C3 volta. A recuperação é uma mitigação experimental, não correção do defeito do ADC2, e não identifica o gatilho exato da falha.
+
+Testes de política cobrem tentativas, cooldown, limite de reboot e recuperação por amostra válida; testes de interface verificam os avisos. Referência Espressif: https://docs.espressif.com/projects/esp-idf/en/release-v5.3/esp32c3/api-reference/peripherals/adc_oneshot.html
+
+### Verificação física da recuperação
+
+OTA confirmou C3 de 844528 bytes, novo boot/SHA/banco 0x10000; S3 normal restaurado. No log serial-20261120-154715.log: t=31663ms, recovery_state=1/attempts=1, primeira conversão com ESP_ERR_TIMEOUT (263), RAW=0. Na amostra seguinte t=32663ms: RAW=2811, 2072mV, 45µs, 13,02V. Sequência seguiu 2,3,4... sem outro boot: recriação local recuperou uma falha real. Captura posterior manteve pots válidos e leituras disponíveis. O caminho de reboot completo/ACK ainda não foi necessário nem confirmado fisicamente; sua política e os avisos passaram nos testes.

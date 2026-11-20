@@ -38,5 +38,6 @@ typedef struct __attribute__((packed)) {
     uint8_t version,type,valid,calibrated;
     uint16_t raw,mv;
     int32_t error;
-    uint32_t duration_us;
+    uint32_t duration_us,recoveries;
+    uint8_t recovery_state,reserved[3]; // 0=normal, 1=ADC2 recreation, 2=C3 reboot pending
 } panel_vcc_t;
