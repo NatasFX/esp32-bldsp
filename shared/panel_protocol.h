@@ -31,3 +31,12 @@ typedef struct __attribute__((packed)) {
     uint8_t version,type,valid_mask,calibrated_mask;
     uint16_t raw[PANEL_COUNT],mv[PANEL_COUNT],position[PANEL_COUNT];
 } panel_adc_t;
+
+// Experimental GPIO5 / ADC2 voltage report, independent of pot packets.
+typedef struct __attribute__((packed)) {
+    uint32_t magic,boot,sequence;
+    uint8_t version,type,valid,calibrated;
+    uint16_t raw,mv;
+    int32_t error;
+    uint32_t duration_us;
+} panel_vcc_t;

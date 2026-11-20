@@ -125,6 +125,13 @@ function change(id,value){element(id).value=String(value);element('editor').inpu
  run("renderPanel({online:true,enabled:true,sequence:42,age_ms:30,revision:1,bindings:[{module:147,selector:1,min_db:-60,max_db:0,position:16384,adc_raw:1200,adc_mv:620,adc_calibrated:true,target_gain_db:-45,gain_db:-10,picked:false,valid:true,active:true}]})");
  assert.match(element('pot-adc0').textContent,/ADC 1200 \/ 4095 · 620 mV · calibrado/);assert.equal(element('pot-percent0').textContent,'25,0 %');assert.equal(element('pot-request0').textContent,'-45,00 dB');assert.equal(element('pot-dsp0').textContent,'-10,00 dB');assert.match(element('pot-pickup0').textContent,/aumentar/);assert.match(element('panel-live-state').textContent,/42/);
  element('pot-min0').value='-50';element('pot-min0').oninput();
+ run("renderPanel({online:true,bindings:[],vcc:{valid:true,volts:14.4,mv:1846,raw:3000,duration_us:65,calibrated:false}})");
+ assert.match(element('panel-vcc').textContent,/14\.40 V/);
+ assert.match(element('panel-vcc').textContent,/aproximada/);
+ run("renderPanel({online:false,bindings:[],vcc:{valid:true,volts:14.4,error:'Sem amostra recente'}})");
+ assert.match(element('panel-vcc').textContent,/indisponível/);
+ run("renderPanel({online:true,bindings:[],vcc:{valid:false,error:'ESP_ERR_TIMEOUT'}})");
+ assert.match(element('panel-vcc').textContent,/ESP_ERR_TIMEOUT/);
  run("renderPanel({online:true,enabled:true,revision:1,bindings:[{module:147,selector:1,min_db:-60,max_db:0,position:49151,target_gain_db:-15,gain_db:-10,picked:true,valid:true,active:true}]})");
  assert.equal(element('pot-min0').value,'-50','live readings preserve unsaved mapping');assert.match(element('pot-state0').textContent,/Controlando/);assert.equal(element('pot-pickup0').textContent,'');
  run("renderPanel({online:false,enabled:true,revision:1,bindings:[{module:147,selector:1,min_db:-60,max_db:0,position:49151,gain_db:null,picked:false,valid:false}]})");

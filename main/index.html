@@ -56,6 +56,7 @@
 </main>
 <main id="panel-view" role="tabpanel" aria-labelledby="view-panel" hidden>
 <div class="monitor-heading"><h2>Painel físico</h2></div><p class="mini">Leituras ao vivo, mapeamento dos cinco potenciômetros e configurações do painel C3. Sentido invertido: 0 V = máximo; tensão alta = mínimo.</p>
+<section class="monitor-card"><h2>VCC do carro · experimental</h2><p id="panel-vcc" class="mini" role="status">Aguardando ADC2 do C3.</p><p class="mini">GPIO5 · divisor 68 kΩ / 10 kΩ · 1 leitura/s. Não utilizado para proteção.</p></section>
 <details id="panel-settings" class="protection-panel" open><summary><svg viewBox="0 0 24 24" width="19" height="19" style="vertical-align:middle" aria-hidden="true"><circle cx="12" cy="13" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 13L16 8M4 6L2 4M12 3V0M20 6L22 4" stroke="currentColor" stroke-width="2"/></svg> Potenciômetros <span id="panel-link">· aguardando C3</span></summary>
 <p class="mini">Cinco controles de ganho. Após trocar preset ou mexer pelo celular, alcance o valor atual com o potenciômetro para assumir o controle. Filtros desativados permanecem desativados.</p>
 <label class="check"><input id="panel-enabled" type="checkbox">Habilitar painel físico</label><p id="panel-live-state" class="mini" role="status">Aguardando leituras do C3.</p><div id="panel-bindings"></div><button id="panel-save" type="button">Salvar potenciômetros</button><p id="panel-message" class="mini" role="status">Mapeamento salvo no ESP principal. OLED sem uso.</p><p><a href="/panel-update">Atualizar firmware do C3 sem cabo USB</a></p></details>
@@ -446,7 +447,7 @@ async function pollMonitor(){
    try{const history=await api('/api/telemetry/history');if(currentView==='monitor'&&generation===monitorGeneration){renderHistory(history);lastHistoryFetch=Date.now();}}
    catch(e){if(currentView==='monitor'&&generation===monitorGeneration)$('monitor-history-state').textContent='Não foi possível atualizar o histórico do ESP.';}
   }
- }catch(e){renderGlobalClip(null);$('panel-live-state').textContent='Sem conexão com o ESP. Leituras anteriores não representam o estado atual.';$('panel-link').textContent='· sem conexão com o ESP';for(let i=0;i<5;i++)$('pot-live'+i).setAttribute('data-stale',true);if(currentView==='monitor'&&generation===monitorGeneration)monitorUnavailable();}
+ }catch(e){renderGlobalClip(null);$('panel-vcc').textContent='Leitura indisponível · sem conexão com o ESP';$('panel-live-state').textContent='Sem conexão com o ESP. Leituras anteriores não representam o estado atual.';$('panel-link').textContent='· sem conexão com o ESP';for(let i=0;i<5;i++)$('pot-live'+i).setAttribute('data-stale',true);if(currentView==='monitor'&&generation===monitorGeneration)monitorUnavailable();}
  finally{monitorFetching=false;monitorTimer=setTimeout(pollMonitor,currentView==='monitor'?1000:200);}
 }
 let protectionEdited=false,protectionLoaded=false;
@@ -555,6 +556,8 @@ for(let i=0;i<5;i++){
 }
 $('panel-enabled').oninput=()=>{panelEdited=true;};
 function renderPanel(p){
+ const v=p?.vcc;
+ $('panel-vcc').textContent=v?.valid&&p.online?'VCC '+Number(v.volts).toFixed(2)+' V · ADC '+v.mv+' mV · RAW '+v.raw+' · '+v.duration_us+' µs · '+(v.calibrated?'calibrado':'conversão aproximada'):'Leitura indisponível · '+(v?.error||'aguardando C3');
  if(!p)return;
  $('panel-link').textContent=p.online?'· C3 conectado':'· C3 desconectado';
  $('panel-live-state').textContent=p.online?'Ao vivo · pacote '+(p.sequence??'—')+' · recebido há '+(Number.isFinite(p.age_ms)?Math.round(p.age_ms)+' ms':'—')+(!p.enabled?' · comandos desativados; leituras disponíveis':''):'Sem dados recentes. As últimas leituras ficam esmaecidas.';

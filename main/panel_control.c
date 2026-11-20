@@ -30,6 +30,7 @@ static knob_state_t knobs[5];
 static QueueHandle_t inbox;static SemaphoreHandle_t action;
 static portMUX_TYPE mux=portMUX_INITIALIZER_UNLOCKED;
 static uint32_t input_sequence,input_boot;
+static panel_vcc_t vcc_diagnostics;static uint64_t vcc_at;
 static panel_adc_t adc_diagnostics;static uint64_t diagnostics_at;
 static uint64_t received_at;static uint16_t positions[5];static uint8_t valid_mask,picked_mask;
 static esp_err_t last_error;static bool initialized;
@@ -49,6 +50,12 @@ static bool config_valid(const panel_config_t *c){
 static void receive(const esp_now_recv_info_t *info,const uint8_t *data,int len){
     if(!info||memcmp(info->src_addr,panel_remote_mac,6))return;
     if(panel_ota_receive(data,len))return;
+    if(len==sizeof(panel_vcc_t)){
+        panel_vcc_t d;memcpy(&d,data,sizeof(d));
+        if(d.magic!=PANEL_MAGIC||d.version!=PANEL_VERSION||d.type!=7||d.valid>1||d.calibrated>1||d.raw>4095)return;
+        portENTER_CRITICAL(&mux);vcc_diagnostics=d;vcc_at=esp_timer_get_time()/1000;portEXIT_CRITICAL(&mux);
+        ESP_LOGI("panel_vcc","seq=%lu raw=%u mv=%u cal=%u err=%ld read_us=%lu",(unsigned long)d.sequence,d.raw,d.mv,d.calibrated,(long)d.error,(unsigned long)d.duration_us);return;
+    }
     if(len==sizeof(panel_adc_t)){
         panel_adc_t d;memcpy(&d,data,sizeof(d));
         if(d.magic!=PANEL_MAGIC||d.version!=PANEL_VERSION||d.type!=6||(d.valid_mask&~31)||(d.calibrated_mask&~31))return;
@@ -150,6 +157,12 @@ void panel_add_status(cJSON *root){
     cJSON_AddNumberToObject(p,"sequence",sequence);cJSON_AddNumberToObject(p,"boot",boot);
     if(last)cJSON_AddNumberToObject(p,"age_ms",now-last);else cJSON_AddNullToObject(p,"age_ms");
     cJSON_AddStringToObject(p,"error",error==ESP_OK?"":esp_err_to_name(error));
+    portENTER_CRITICAL(&mux);panel_vcc_t vd=vcc_diagnostics;uint64_t va=vcc_at;portEXIT_CRITICAL(&mux);
+    bool vf=last&&now-last<1500&&va&&now-va<2500&&vd.boot==boot;
+    cJSON *v=cJSON_AddObjectToObject(p,"vcc");cJSON_AddBoolToObject(v,"fresh",vf);cJSON_AddBoolToObject(v,"valid",vf&&vd.valid);
+    cJSON_AddBoolToObject(v,"calibrated",vd.calibrated);cJSON_AddNumberToObject(v,"raw",vd.raw);cJSON_AddNumberToObject(v,"mv",vd.mv);
+    cJSON_AddNumberToObject(v,"volts",vd.mv*.0078);cJSON_AddNumberToObject(v,"duration_us",vd.duration_us);
+    cJSON_AddStringToObject(v,"error",vf?esp_err_to_name(vd.error):"Sem amostra recente");
     cJSON *a=cJSON_AddArrayToObject(p,"bindings");
     for(int i=0;i<5;i++){
         const knob_binding_t *binding=&c.binding[i];cJSON *b=cJSON_CreateObject();

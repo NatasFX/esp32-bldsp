@@ -29,6 +29,33 @@ static void received(const esp_now_recv_info_t *info,const uint8_t *data,int len
     panel_strip_receive(&r);
     portENTER_CRITICAL(&mux);reply=r;last_reply=esp_timer_get_time()/1000;portEXIT_CRITICAL(&mux);
 }
+static uint32_t remote_boot;
+static void vcc_worker(void *arg){
+    (void)arg;
+    adc_oneshot_unit_handle_t adc=NULL;
+    adc_oneshot_unit_init_cfg_t init={.unit_id=ADC_UNIT_2};
+    adc_oneshot_chan_cfg_t cfg={.atten=ADC_ATTEN_DB_12,.bitwidth=ADC_BITWIDTH_12};
+    adc_cali_handle_t cal=NULL;
+    adc_cali_curve_fitting_config_t ccfg={.unit_id=ADC_UNIT_2,.atten=ADC_ATTEN_DB_12,.bitwidth=ADC_BITWIDTH_12};
+    esp_err_t setup=adc_oneshot_new_unit(&init,&adc);
+    if(setup==ESP_OK)setup=adc_oneshot_config_channel(adc,ADC_CHANNEL_0,&cfg);
+    if(setup==ESP_OK)adc_cali_create_scheme_curve_fitting(&ccfg,&cal);
+    panel_vcc_t p={.magic=PANEL_MAGIC,.boot=remote_boot,.version=PANEL_VERSION,.type=7};
+    while(1){
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        if(panel_ota_busy())continue;
+        int raw=0,mv=0;int64_t start=esp_timer_get_time();
+        esp_err_t err=setup==ESP_OK?adc_oneshot_read(adc,ADC_CHANNEL_0,&raw):setup;
+        p.duration_us=(uint32_t)(esp_timer_get_time()-start);p.sequence++;
+        p.valid=err==ESP_OK&&raw>=0&&raw<=4095;p.error=err;p.raw=p.valid?raw:0;p.mv=0;p.calibrated=0;
+        if(p.valid){
+            p.calibrated=cal&&adc_cali_raw_to_voltage(cal,raw,&mv)==ESP_OK;
+            if(!p.calibrated)mv=raw*2500/4095;
+            p.mv=mv<0?0:mv>65535?65535:mv;
+        }
+        esp_now_send(panel_primary_mac,(uint8_t*)&p,sizeof(p));
+    }
+}
 void app_main(void){
     esp_err_t err=nvs_flash_init();
     if(err==ESP_ERR_NVS_NO_FREE_PAGES||err==ESP_ERR_NVS_NEW_VERSION_FOUND){ESP_ERROR_CHECK(nvs_flash_erase());err=nvs_flash_init();}
@@ -52,6 +79,8 @@ void app_main(void){
     ESP_LOGI("panel","C3 panel: ADC GPIO0,1,2,3,4; WS2812 GPIO7; OLED unused; ESP-NOW ch6 2dBm encrypted");
     ESP_LOGI("panel","B10K wiring: 3V3 -> 3k3 -> pot high; low -> GND; wiper -> 1k -> ADC; ADC -> 100nF -> GND; fullscale 2480mV");
     panel_input_t packet={.magic=PANEL_MAGIC,.version=PANEL_VERSION,.type=1,.boot=esp_random()};
+    remote_boot=packet.boot;
+    if(xTaskCreate(vcc_worker,"vcc_adc2",3072,NULL,1,NULL)!=pdPASS)ESP_LOGW("panel","VCC worker unavailable");
     panel_adc_t diagnostics={.magic=PANEL_MAGIC,.version=PANEL_VERSION,.type=6,.boot=packet.boot};
     int filtered[5]={0};bool seeded[5]={0};uint64_t last_send=0,last_log=0,last_diagnostics=0;uint16_t last_position[5]={0};
     TickType_t cadence=xTaskGetTickCount();
