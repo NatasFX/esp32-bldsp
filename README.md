@@ -82,7 +82,7 @@ Presets: GET/POST `/api/preset?slot=1..4`, blobs versionados na namespace NVS `e
 
 ## Painel remoto C3 e automação
 
-- [Experimento de leitura VCC no GPIO5/ADC2 do C3](docs/vcc_c3.md), 1 amostra/s; ainda sem validação elétrica.
+- [Monitoramento de alimentação](docs/bateria.md): alvo de 100 amostras/s, média/mínima a cada segundo, avisos de tensão e correlação com CLIP. [Montagem e calibração experimental do ADC2](docs/vcc_c3.md).
 - Cinco potenciômetros com funções configuráveis, diagnóstico RAW/mV e estado do enlace: [painel C3](docs/painel_c3.md).
 - Fita WS2812 RGB de 22 LEDs, renderização a 120 Hz, paletas, resposta aos pots e CLIP vermelho em intensidade 255. Desconectado: giro à esquerda em 8 s e respiração de 30–100% em 4 s. [Efeitos](docs/fita_ws2812.md).
 - Relógio sincronizado automaticamente pelo portal e brilho por horários solares/CSV: [brilho automático](docs/brilho_automatico.md).

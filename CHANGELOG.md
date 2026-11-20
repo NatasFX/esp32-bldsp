@@ -1,5 +1,14 @@
 # Histórico de entregas
 
+## 2026-11-20 — Bateria e mínimos durante CLIP
+
+- ADC2 do C3 com alvo de 10ms, média/mínima por segundo e contagem de amostras válidas/perdidas.
+- Média lenta de até 30s para descarga sustentada e mínimos de 1s para quedas breves.
+- Avisos amarelos a cada 5s e vermelhos a cada 2s; CLIP mantém prioridade.
+- Quatro limiares configuráveis na aba Monitoramento, persistidos na NVS do S3.
+- Tensão principal e mínima na janela do último CLIP, com identificação do evento e idade; correlação aproximada via ESP-NOW.
+- Firmware enviado, testes aprovados; seis janelas físicas com 100 amostras/s e nenhuma perda. Validação visual e CLIP real pendentes.
+
 ## 2026-11-20 — Painel C3, proteções e fluxo de atualização
 
 ### Controle e interface

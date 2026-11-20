@@ -23,6 +23,7 @@ typedef struct __attribute__((packed)) {
     uint32_t primary_boot,uptime_ms,clip_count,clip_low_ms;
     uint16_t led_count;
     uint8_t led_brightness,led_mode,led_enabled,sensor_ready;
+    uint8_t battery_level,reserved_battery[3];
 } panel_reply_t;
 
 // Optional diagnostics; preserves the existing control/reply packet layout.
@@ -40,4 +41,6 @@ typedef struct __attribute__((packed)) {
     int32_t error;
     uint32_t duration_us,recoveries;
     uint8_t recovery_state,reserved[3]; // 0=normal, 1=ADC2 recreation, 2=C3 reboot pending
+    uint16_t min_mv,samples,missed,clip_min_mv;
+    uint32_t window_ms,clip_primary_boot,clip_count;
 } panel_vcc_t;

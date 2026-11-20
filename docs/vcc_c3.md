@@ -49,3 +49,7 @@ Testes de política cobrem tentativas, cooldown, limite de reboot e recuperaçã
 ### Verificação física da recuperação
 
 OTA confirmou C3 de 844528 bytes, novo boot/SHA/banco 0x10000; S3 normal restaurado. No log serial-20261120-154715.log: t=31663ms, recovery_state=1/attempts=1, primeira conversão com ESP_ERR_TIMEOUT (263), RAW=0. Na amostra seguinte t=32663ms: RAW=2811, 2072mV, 45µs, 13,02V. Sequência seguiu 2,3,4... sem outro boot: recriação local recuperou uma falha real. Captura posterior manteve pots válidos e leituras disponíveis. O caminho de reboot completo/ACK ainda não foi necessário nem confirmado fisicamente; sua política e os avisos passaram nos testes.
+
+## Evolução para 100Hz
+
+A versão de monitoramento de bateria substitui o sample de 1Hz por alvo de 10ms, agregando média e mínima a cada segundo. Formato dos relatórios e reply ampliado para suportar estatísticas/avisos; atualizar ambos os ESPs juntos. Detalhes atuais em [bateria.md](bateria.md); os registros de 1Hz acima permanecem históricos.

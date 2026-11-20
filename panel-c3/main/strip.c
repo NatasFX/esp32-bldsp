@@ -64,6 +64,7 @@ static void worker(void *arg){
             strip_visual_observe(&visual,now,r.primary_boot,r.uptime_ms,r.clip_low_ms,r.clip_count,r.clip&&r.sensor_ready);last_generation=gen;
         }
         visual.palette=gen&&r.reserved[0]<STRIP_PALETTE_COUNT?r.reserved[0]:0;
+        visual.battery_level=online?r.battery_level:0;
         strip_visual_tick(&visual,now,online);
         if(count<previous_count)frame(previous_count,mode,0,true,online,&visual,now);
         unsigned fade=now-started<3000?0:now-started<4000?(unsigned)(now-started-3000):1000;

@@ -3,6 +3,7 @@ idf_component_register(
         "app.c"
         "wifi_power.c"
         "panel_control.c"
+        "battery.c"
         "lighting.c"
         "light_policy.c"
         "panel_ota.c"

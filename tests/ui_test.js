@@ -2,7 +2,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
 const html=fs.readFileSync(path.join(__dirname,'../main/index.html'),'utf8');
 const elements=new Map(),bodyClasses=new Map(),document={body:{classList:{toggle(name,on){bodyClasses.set(name,on);}}},getElementById:element,createElement:()=>({}),querySelectorAll:()=>[],documentElement:{style:{setProperty(){}}}};
-function element(id){if(!elements.has(id))elements.set(id,{value:'',checked:false,disabled:false,textContent:'',append(){},classList:{toggle(){}},focus(){document.activeElement=this;},select(){},blur(){document.activeElement=null;this.onblur?.();},setAttribute(k,v){this[k]=v;},getContext(){return null;},addEventListener(name,fn){this[name]=fn;},reportValidity(){return true;}});return elements.get(id);}
+function element(id){if(!elements.has(id))elements.set(id,{style:{},value:'',checked:false,disabled:false,textContent:'',append(){},classList:{toggle(){}},focus(){document.activeElement=this;},select(){},blur(){document.activeElement=null;this.onblur?.();},setAttribute(k,v){this[k]=v;},getContext(){return null;},addEventListener(name,fn){this[name]=fn;},reportValidity(){return true;}});return elements.get(id);}
 const seed=JSON.parse(fs.readFileSync(path.join(__dirname,'../preset1_acp.json'),'utf8'));
 let bank={sub:seed.sub.slice(),stereo:seed.stereo.slice()},calls=[],confirms=0,holdNext=false,release;
 const storage=new Map(),timers=new Map();let timerId=0;
@@ -125,6 +125,9 @@ function change(id,value){element(id).value=String(value);element('editor').inpu
  run("renderPanel({online:true,enabled:true,sequence:42,age_ms:30,revision:1,bindings:[{module:147,selector:1,min_db:-60,max_db:0,position:16384,adc_raw:1200,adc_mv:620,adc_calibrated:true,target_gain_db:-45,gain_db:-10,picked:false,valid:true,active:true}]})");
  assert.match(element('pot-adc0').textContent,/ADC 1200 \/ 4095 · 620 mV · calibrado/);assert.equal(element('pot-percent0').textContent,'25,0 %');assert.equal(element('pot-request0').textContent,'-45,00 dB');assert.equal(element('pot-dsp0').textContent,'-10,00 dB');assert.match(element('pot-pickup0').textContent,/aumentar/);assert.match(element('panel-live-state').textContent,/42/);
  element('pot-min0').value='-50';element('pot-min0').oninput();
+ run("renderBattery({valid:true,mean_v:12.5,min_v:10.8,slow_mean_v:12.7,slow_samples:30,samples:100,missed:0,level:1,clip_min_v:10.7,clip_count:4,clip_age_ms:1000})");
+ assert.match(element('main-battery').textContent,/12.50 V/);assert.match(element('clip-vcc').textContent,/10.70 V/);
+ run("renderBattery({valid:false,mean_v:12.5,min_v:10.8})");assert.match(element('main-battery').textContent,/sem leitura/);
  run("renderPanel({online:true,bindings:[],vcc:{valid:false,recovery_state:2}})");
  assert.match(element('panel-vcc').textContent,/reiniciar/);
  run("renderPanel({online:true,bindings:[],vcc:{valid:false,recovery_state:1,recoveries:2}})");

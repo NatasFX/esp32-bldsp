@@ -11,6 +11,7 @@
 #include "esp_random.h"
 #include "esp_system.h"
 #include "vcc_recovery.h"
+#include "vcc_stats.h"
 #include "nvs_flash.h"
 #include "esp_adc/adc_oneshot.h"
 #include "esp_adc/adc_cali.h"
@@ -43,23 +44,47 @@ static void vcc_worker(void *arg){
     if(setup==ESP_OK)setup=adc_oneshot_config_channel(adc,ADC_CHANNEL_0,&cfg);
     if(setup==ESP_OK)adc_cali_create_scheme_curve_fitting(&ccfg,&cal);
     panel_vcc_t p={.magic=PANEL_MAGIC,.boot=remote_boot,.version=PANEL_VERSION,.type=7};
-    vcc_recovery_t recovery={0};
+    vcc_recovery_t recovery={0};vcc_stats_t stats={0};
+    static struct {uint64_t at;uint16_t mv;} history[100];unsigned head=0;
+    uint64_t report_at=esp_timer_get_time()/1000,clip_until=0;uint32_t clip_boot=0,clip_seen=0;
+    TickType_t sample_tick=xTaskGetTickCount();
     while(1){
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        if(panel_ota_busy())continue;
+        vTaskDelayUntil(&sample_tick,pdMS_TO_TICKS(10));
+        if(panel_ota_busy()){stats=(vcc_stats_t){0};report_at=esp_timer_get_time()/1000;sample_tick=xTaskGetTickCount();continue;}
         int raw=0,mv=0;int64_t start=esp_timer_get_time();
         esp_err_t err=setup==ESP_OK?adc_oneshot_read(adc,ADC_CHANNEL_0,&raw):setup;
-        p.duration_us=(uint32_t)(esp_timer_get_time()-start);p.sequence++;
+        p.duration_us=(uint32_t)(esp_timer_get_time()-start);
         p.valid=err==ESP_OK&&raw>0&&raw<4095;p.error=err;p.raw=raw>=0&&raw<=4095?raw:0;p.mv=0;p.calibrated=0;
         if(p.valid){
             p.calibrated=cal&&adc_cali_raw_to_voltage(cal,raw,&mv)==ESP_OK;
             if(!p.calibrated)mv=raw*2500/4095;
             p.mv=mv<0?0:mv>65535?65535:mv;
         }
-        unsigned action=vcc_recovery_step(&recovery,esp_timer_get_time()/1000,p.valid);
+        uint64_t now=esp_timer_get_time()/1000;
+        vcc_stats_add(&stats,p.valid,p.mv);
+        if(p.valid){history[head].at=now;history[head].mv=p.mv;head=(head+1)%100;}
+        portENTER_CRITICAL(&mux);panel_reply_t clip=reply;uint64_t clip_at=last_reply;portEXIT_CRITICAL(&mux);
+        if(clip_at&&now-clip_at<1500){
+            if(clip.primary_boot!=clip_boot){clip_boot=clip.primary_boot;clip_seen=clip.clip_count;p.clip_min_mv=0;p.clip_primary_boot=0;p.clip_count=0;clip_until=0;}
+            if(clip.clip_count!=clip_seen){
+                clip_seen=clip.clip_count;p.clip_count=clip_seen;p.clip_primary_boot=clip_boot;p.clip_min_mv=0;
+                for(unsigned i=0;i<100;i++)if(history[i].at&&now-history[i].at<=1000&&(!p.clip_min_mv||history[i].mv<p.clip_min_mv))p.clip_min_mv=history[i].mv;
+                clip_until=now+500;
+            }
+            if(clip.clip&&p.clip_primary_boot==clip_boot&&p.clip_count==clip_seen)clip_until=now+500;
+        }
+        if(p.valid&&now<=clip_until&&(!p.clip_min_mv||p.mv<p.clip_min_mv))p.clip_min_mv=p.mv;
+        unsigned action=vcc_recovery_step(&recovery,now,p.valid);
         if(p.valid)p.recovery_state=0;
         if(action){p.recovery_state=action;p.recoveries++;}
-        esp_now_send(panel_primary_mac,(uint8_t*)&p,sizeof(p));
+        if(action||now-report_at>=1000){
+            p.samples=stats.count;p.missed=stats.missed;p.window_ms=now-report_at;
+            p.min_mv=stats.count?stats.min_mv:0;
+            p.valid=!p.recovery_state&&p.window_ms>=800&&p.window_ms<=1500&&stats.count>=80;
+            if(stats.count)p.mv=vcc_stats_mean(&stats);
+            p.sequence++;esp_now_send(panel_primary_mac,(uint8_t*)&p,sizeof(p));
+            stats=(vcc_stats_t){0};report_at=now;
+        }
         if(action==1){
             ESP_LOGW("vcc","Recreate ADC2 attempt=%lu raw=%d err=%s",(unsigned long)p.recoveries,raw,esp_err_to_name(err));
             if(adc){setup=adc_oneshot_del_unit(adc);if(setup==ESP_OK)adc=NULL;}
@@ -76,6 +101,7 @@ static void vcc_worker(void *arg){
             ESP_LOGW("vcc","ADC2 recovery failed; C3 software restart, S3 ack=%u",ack);
             if(!panel_ota_busy())esp_restart();
         }
+        if(action)sample_tick=xTaskGetTickCount();
     }
 }
 void app_main(void){

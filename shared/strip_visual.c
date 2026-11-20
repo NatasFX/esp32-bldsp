@@ -53,6 +53,14 @@ strip_rgb_t strip_visual_pixel(const strip_visual_t *s,uint64_t now,unsigned pix
         uint8_t rgb[3];strip_palette_sample(s->palette,travel,rgb);
         c=(strip_rgb_t){(uint8_t)lround(rgb[0]*intensity),(uint8_t)lround(rgb[1]*intensity),(uint8_t)lround(rgb[2]*intensity)};
     }
+    if(online&&s->battery_level){
+        uint64_t period=s->battery_level>=2?2000:5000,phase=now%period;
+        if(phase<300){double pulse=sin(3.141592653589793*phase/300.);pulse*=pulse;
+            c.r=(uint8_t)lround(c.r*(1-pulse)+255*pulse);
+            c.g=(uint8_t)lround(c.g*(1-pulse)+(s->battery_level>=2?0:190)*pulse);
+            c.b=(uint8_t)lround(c.b*(1-pulse));
+        }
+    }
     double duty=.20+.55*s->envelope;
     // Alarm pulses are full red regardless of the user's decorative brightness.
     // Occupancy still controls cadence/duty; fade only after the alert hold ends.

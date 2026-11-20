@@ -46,6 +46,15 @@ int main(void){
  strip_rgb_t high=strip_visual_pixel(&breath,4000,0,22,1,100,false);
  strip_rgb_t low=strip_visual_pixel(&breath,2000,0,22,1,100,false);
  assert(abs((int)low.r-(int)lround(high.r*.3))<=1);
+ // Battery pulses follow distinct cadence; CLIP remains full red priority.
+ strip_visual_t battery={.battery_level=1};
+ strip_rgb_t yellow=strip_visual_pixel(&battery,5150,0,22,1,100,true);
+ assert(yellow.r==255&&yellow.g==190&&yellow.b==0);
+ battery.battery_level=2;
+ strip_rgb_t red=strip_visual_pixel(&battery,2150,0,22,1,100,true);
+ assert(red.r==255&&red.g==0&&red.b==0);
+ battery.battery_level=1;battery.envelope=1;battery.phase=0;battery.hold_until=6000;
+ red=strip_visual_pixel(&battery,5150,0,22,1,30,true);assert(red.r==255&&!red.g&&!red.b);
  // Endpoint dim must never dim the CLIP overlay.
  strip_visual_t clip_priority={.envelope=1,.phase=0,.hold_until=2000};clip_priority.motion.endpoint=true;clip_priority.motion.endpoint_at=1000;
  strip_rgb_t alarm=strip_visual_pixel(&clip_priority,1250,0,22,1,30,true);

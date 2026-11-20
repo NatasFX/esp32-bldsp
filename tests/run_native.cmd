@@ -71,6 +71,10 @@ cl /nologo /std:c11 /W4 /I..\main light_policy_test.c ..\main\light_policy.c /Fe
 if not "%errorlevel%"=="0" exit /b %errorlevel%
 light_policy_test.exe
 if not "%errorlevel%"=="0" exit /b %errorlevel%
+cl /nologo /std:c11 /W4 /I..\shared battery_test.c /Fe:battery_test.exe
+if not "%errorlevel%"=="0" exit /b %errorlevel%
+battery_test.exe
+if not "%errorlevel%"=="0" exit /b %errorlevel%
 node panel_ota_ui_test.js
 if not "%errorlevel%"=="0" exit /b %errorlevel%
 node ui_test.js

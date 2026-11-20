@@ -1,4 +1,5 @@
 #include "panel_control.h"
+#include "battery.h"
 #include "vcc_calibration.h"
 #include "lighting.h"
 #include "panel_ota.h"
@@ -53,10 +54,11 @@ static void receive(const esp_now_recv_info_t *info,const uint8_t *data,int len)
     if(panel_ota_receive(data,len))return;
     if(len==sizeof(panel_vcc_t)){
         panel_vcc_t d;memcpy(&d,data,sizeof(d));
-        if(d.magic!=PANEL_MAGIC||d.version!=PANEL_VERSION||d.type!=7||d.valid>1||d.calibrated>1||d.raw>4095||d.recovery_state>2)return;
+        if(d.magic!=PANEL_MAGIC||d.version!=PANEL_VERSION||d.type!=7||d.valid>1||d.calibrated>1||d.raw>4095||d.recovery_state>2||d.min_mv>d.mv||d.samples>200||d.missed>200)return;
         portENTER_CRITICAL(&mux);bool changed=d.boot!=vcc_diagnostics.boot||d.recovery_state!=vcc_diagnostics.recovery_state||d.recoveries!=vcc_diagnostics.recoveries;vcc_diagnostics=d;vcc_at=esp_timer_get_time()/1000;portEXIT_CRITICAL(&mux);
+        battery_ingest(&d,primary_boot);
         if(changed&&d.recovery_state)ESP_LOGW("panel_vcc","C3 recovery state=%u attempts=%lu",d.recovery_state,(unsigned long)d.recoveries);
-        ESP_LOGI("panel_vcc","seq=%lu raw=%u mv=%u cal=%u err=%ld read_us=%lu vcc=%.2fV",(unsigned long)d.sequence,d.raw,d.mv,d.calibrated,(long)d.error,(unsigned long)d.duration_us,(d.valid&&vcc_raw_valid(d.raw))?vcc_from_mv(d.mv):NAN);return;
+        ESP_LOGI("panel_vcc","seq=%lu raw=%u mv=%u cal=%u err=%ld read_us=%lu avg=%.2fV min=%.2fV n=%u missed=%u",(unsigned long)d.sequence,d.raw,d.mv,d.calibrated,(long)d.error,(unsigned long)d.duration_us,(d.valid&&vcc_raw_valid(d.raw))?vcc_from_mv(d.mv):NAN,d.valid?vcc_from_mv(d.min_mv):NAN,d.samples,d.missed);return;
     }
     if(len==sizeof(panel_adc_t)){
         panel_adc_t d;memcpy(&d,data,sizeof(d));
@@ -121,7 +123,7 @@ static void worker(void *arg){
             telemetry_clip_t clip;telemetry_clip_state(&clip);
             panel_reply_t r={.magic=PANEL_MAGIC,.version=PANEL_VERSION,.type=2,.sequence=sequence,.enabled=config.enabled,.picked_mask=picked,.valid_mask=p.valid_mask,.clip=clip.sustained};
             r.primary_boot=primary_boot;r.uptime_ms=(uint32_t)(esp_timer_get_time()/1000);r.clip_count=clip.count;r.clip_low_ms=clip.low_ms;r.clip=clip.lit;r.sensor_ready=clip.ready;
-            r.led_count=strip.count;r.led_brightness=lighting_brightness(strip.brightness);r.led_mode=strip.mode;r.led_enabled=strip.enabled;r.reserved[0]=strip.palette;
+            r.led_count=strip.count;r.led_brightness=lighting_brightness(strip.brightness);r.led_mode=strip.mode;r.led_enabled=strip.enabled;r.reserved[0]=strip.palette;r.battery_level=battery_alert();
             portENTER_CRITICAL(&mux);if(vcc_diagnostics.boot==p.boot)r.reserved[1]=vcc_diagnostics.recovery_state;portEXIT_CRITICAL(&mux);
             for(int i=0;i<5;i++)r.gain_q8[i]=current_gain[i];
             esp_now_send(panel_remote_mac,(uint8_t*)&r,sizeof(r));reply_at=now;
@@ -130,7 +132,7 @@ static void worker(void *arg){
     }
 }
 void panel_start(void){
-    lighting_start();config=defaults();primary_boot=esp_random();nvs_handle_t nvs;
+    lighting_start();battery_start();config=defaults();primary_boot=esp_random();nvs_handle_t nvs;
     if(nvs_open("panel",NVS_READONLY,&nvs)==ESP_OK){panel_config_t saved;size_t size=sizeof(saved);if(nvs_get_blob(nvs,"config_v1",&saved,&size)==ESP_OK&&size==sizeof(saved)&&config_valid(&saved))config=saved;nvs_close(nvs);}
     if(nvs_open("panel",NVS_READONLY,&nvs)==ESP_OK){strip_config_t saved;size_t size=sizeof(saved);if(nvs_get_blob(nvs,"strip_v1",&saved,&size)==ESP_OK&&size==sizeof(saved)&&(saved.version>=1&&saved.version<=3)&&saved.count>=1&&saved.count<=150&&saved.brightness<=100&&saved.mode<=2&&saved.enabled<=1&&(saved.version<3||saved.palette<STRIP_PALETTE_COUNT)){strip=saved;}nvs_close(nvs);}
     if(strip.version<3){
@@ -155,7 +157,7 @@ void panel_add_status(cJSON *root){
     uint64_t now=esp_timer_get_time()/1000;panel_config_t c;strip_config_t led;uint16_t pos[5];uint8_t mask,picked;uint64_t last;uint32_t sequence,boot;panel_adc_t diag;uint64_t diag_at;esp_err_t error;
     portENTER_CRITICAL(&mux);c=config;led=strip;memcpy(pos,positions,sizeof(pos));mask=valid_mask;picked=picked_mask;last=received_at;sequence=input_sequence;boot=input_boot;diag=adc_diagnostics;diag_at=diagnostics_at;error=last_error;portEXIT_CRITICAL(&mux);
     cJSON *led_json=cJSON_AddObjectToObject(root,"strip");cJSON_AddNumberToObject(led_json,"count",led.count);cJSON_AddNumberToObject(led_json,"brightness",led.brightness);cJSON_AddNumberToObject(led_json,"mode",led.mode);cJSON_AddNumberToObject(led_json,"palette",led.palette);cJSON_AddBoolToObject(led_json,"enabled",led.enabled);
-    lighting_status(root,led.brightness);
+    lighting_status(root,led.brightness);battery_status(root);
     cJSON *p=cJSON_AddObjectToObject(root,"panel");cJSON_AddBoolToObject(p,"available",initialized);cJSON_AddBoolToObject(p,"online",last&&now-last<1500);cJSON_AddBoolToObject(p,"enabled",c.enabled);
     cJSON_AddNumberToObject(p,"sequence",sequence);cJSON_AddNumberToObject(p,"boot",boot);
     if(last)cJSON_AddNumberToObject(p,"age_ms",now-last);else cJSON_AddNullToObject(p,"age_ms");
@@ -230,7 +232,7 @@ static esp_err_t strip_route(httpd_req_t *r){
 }
 void panel_register(httpd_handle_t server){
     panel_ota_register(server);
-    lighting_register(server);
+    lighting_register(server);battery_register(server);
     const httpd_uri_t get={.uri="/api/panel",.method=HTTP_GET,.handler=route},post={.uri="/api/panel",.method=HTTP_POST,.handler=route};
     ESP_ERROR_CHECK(httpd_register_uri_handler(server,&get));ESP_ERROR_CHECK(httpd_register_uri_handler(server,&post));
     const httpd_uri_t led_get={.uri="/api/strip",.method=HTTP_GET,.handler=strip_route},led_post={.uri="/api/strip",.method=HTTP_POST,.handler=strip_route};
