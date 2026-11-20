@@ -57,7 +57,10 @@ static esp_err_t start_pulse(bool automatic) {
     int64_t now=esp_timer_get_time();
     if(has_pulsed && now-last_start<COOLDOWN_US){xSemaphoreGive(available);return ESP_ERR_TIMEOUT;}
     portENTER_CRITICAL(&policy_lock);
-    bool allowed=policy.present && policy.pid==SOURCE_USB_AUDIO_PID && (!automatic || source_policy_due(&policy,now));
+    bool cycling=!automatic && source_policy_target(&policy);
+    bool allowed=!policy.cycle_wait_usb && policy.present &&
+        (cycling || (policy.pid==SOURCE_USB_AUDIO_PID && (!automatic || source_policy_due(&policy,now))));
+    if(allowed && cycling)source_policy_begin_cycle(&policy,now);
     if(allowed){
         if(!automatic)policy.attempts=0; // explicit recovery after exhausted automatic attempts
         source_policy_pulsed(&policy,now);exhaustion_logged=false;
@@ -72,17 +75,20 @@ static esp_err_t start_pulse(bool automatic) {
     if(err!=ESP_OK){gpio_set_level(MODE_GPIO,1);xSemaphoreGive(available);
         status_led_source_error(true);
         ESP_LOGE("source","Timer failed: %s; line released",esp_err_to_name(err));return err;}
-    ESP_LOGI("source","%s pulse GPIO%d low 100 ms, attempt=%u; awaiting USB 171e",automatic?"Automatic":"Requested",MODE_GPIO,attempt);
+    ESP_LOGI("source","%s pulse GPIO%d low 100 ms, attempt=%u; awaiting next USB mode",automatic?"Automatic":"Requested",MODE_GPIO,attempt);
     return ESP_OK;
 }
 void source_control_poll(void) {
     int64_t now=esp_timer_get_time();
     portENTER_CRITICAL(&policy_lock);
+    bool cycle_timeout=policy.cycle_wait_usb && now>=policy.cycle_deadline;
+    if(cycle_timeout)policy.cycle_wait_usb=false;
     bool due=source_policy_due(&policy,now);
     bool exhausted=policy.present && policy.pid==SOURCE_USB_AUDIO_PID &&
         policy.attempts>=SOURCE_MAX_ATTEMPTS && now>=policy.next_attempt && !exhaustion_logged;
     if(exhausted)exhaustion_logged=true;
     portEXIT_CRITICAL(&policy_lock);
+    if(cycle_timeout){status_led_source_error(true);ESP_LOGE("source","Manual cycle: USB audio 1719 not confirmed in 15 s; no blind second pulse");}
     if(due)start_pulse(true);
     if(exhausted){status_led_source_error(true);ESP_LOGE("source","No target USB 171e after %d attempts; stopped pulses, check GPIO2 wiring",SOURCE_MAX_ATTEMPTS);}
 }
@@ -98,7 +104,7 @@ static esp_err_t pulse(httpd_req_t *r) {
     char body[2];int got=0;
     while(got<2){int n=httpd_req_recv(r,body+got,2-got);if(n<=0)return ESP_FAIL;got+=n;}
     if(memcmp(body,"{}",2))return response(r,"400 Bad Request","{\"error\":\"Envie {}\"}");
-    if(source_control_ready())return response(r,"200 OK","{\"accepted\":true,\"already_target\":true,\"pulse_ms\":0}");
+
     esp_err_t err=start_pulse(false);
     if(err==ESP_ERR_TIMEOUT)return response(r,"429 Too Many Requests","{\"error\":\"Aguarde o pulso anterior\"}");
     if(err==ESP_ERR_INVALID_STATE)return response(r,"503 Service Unavailable","{\"error\":\"Aguardando USB da BLDSP\"}");

@@ -31,6 +31,15 @@ int main(void) {
     source_policy_connected(&p,SOURCE_USB_AUDIO_PID,55000000);
     assert(source_policy_due(&p,56000000)); // later source regression gets fresh recovery budget
     source_policy_connected(&p,0xffff,60000000);assert(!source_policy_due(&p,90000000));
+    source_policy_connected(&p,SOURCE_BLUETOOTH_PID,100000000);
+    assert(source_policy_begin_cycle(&p,100000000));assert(!source_policy_target(&p));
+    assert(!source_policy_begin_cycle(&p,100100000));assert(!source_policy_due(&p,101000000));
+    source_policy_disconnected(&p);source_policy_connected(&p,SOURCE_BLUETOOTH_PID,101000000);
+    assert(p.cycle_wait_usb&&!source_policy_target(&p));
+    source_policy_disconnected(&p);source_policy_connected(&p,SOURCE_USB_AUDIO_PID,102000000);
+    assert(!p.cycle_wait_usb);assert(!source_policy_due(&p,102500000));assert(source_policy_due(&p,103000000));
+    source_policy_pulsed(&p,103000000);source_policy_connected(&p,SOURCE_BLUETOOTH_PID,104000000);
+    assert(source_policy_target(&p)&&!source_policy_due(&p,110000000));
     puts("Source: USB-gated boot, stable delay, target confirmation, recovery and bounded retries OK");
     return 0;
 }

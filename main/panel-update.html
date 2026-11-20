@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Atualizar painel C3</title>
+<style>:root{color-scheme:dark;font:16px system-ui;background:#0c1020;color:#e7edf9}body{max-width:640px;margin:auto;padding:24px}a{color:#77e1cb}h1{font-size:1.6rem}.card{background:#182337;border:1px solid #334155;border-radius:18px;padding:20px;margin:20px 0}p{line-height:1.5;color:#b9c7db}button,input{font:inherit;max-width:100%;margin:10px 0}button{padding:12px 18px;border:0;border-radius:10px;background:#75dfc7;color:#071824;font-weight:650}button:disabled{opacity:.45}button.secondary{background:#334155;color:#e7edf9}progress{width:100%;height:20px;accent-color:#75dfc7}#message{min-height:3em;overflow-wrap:anywhere}#state{color:#75dfc7}small{color:#a5b6ce}label{display:block}</style>
+<a href="/#panel">← Painel</a><h1>Atualizar painel C3</h1>
+<div class="card"><strong id="state">Verificando conexão…</strong><p id="device">ESP-NOW · canal 6</p><button id="refresh" class="secondary">Verificar C3</button></div>
+<div class="card"><label for="firmware">Firmware do painel · arquivo .bin</label><input id="firmware" type="file" accept=".bin,application/octet-stream"><p id="file-info">Selecione bldsp_panel_c3.bin. O firmware do S3 e imagens completas de flash não servem aqui.</p><button id="upload" disabled>Atualizar C3</button> <button id="cancel" class="secondary" disabled>Cancelar envio</button><progress id="progress" value="0" max="100"></progress><p id="message" role="status" aria-live="polite">A atualização será enviada pelo ESP principal. Mantenha os dois ligados e esta página aberta.</p></div>
+<p>O som mantém os últimos ajustes. Os potenciômetros ficam suspensos durante o envio. A versão nova precisa confirmar os ADCs e a comunicação; se falhar, tenta retornar à versão anterior no próximo boot.</p>
+<script>
+const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let image=null,expectedHash='',running=false,cancelled=false,currentSession=0,lastDevice=null;
+async function api(path,data){const r=await fetch(path,{cache:'no-store',...(data===undefined?{}:{method:'POST',headers:{'X-BLDSP':'1','Content-Type':'application/json'},body:JSON.stringify(data)})});const j=await r.json();if(!r.ok)throw Error(j.error||'Falha na comunicação');return j;}
+function controls(){ $('upload').disabled=running||!image||!lastDevice?.online||lastDevice.pending||lastDevice.busy;$('firmware').disabled=running;$('refresh').disabled=running;$('cancel').disabled=!running; }
+async function refresh(){try{const s=await api('/api/panel/ota');lastDevice=s;$('state').textContent=!s.online?'C3 indisponível':s.pending?'C3 validando nova versão':s.busy?'C3 recebendo atualização':'C3 conectado · OTA disponível';$('device').textContent=s.online?'Partição 0x'+Number(s.address).toString(16)+' · firmware '+s.sha256.slice(0,12):'Ligue o painel e aguarde o enlace com o S3.';controls();return s;}catch(e){$('state').textContent=e.message;lastDevice=null;controls();throw e;}}
+$('refresh').onclick=()=>refresh().catch(()=>{});
+$('firmware').onchange=async()=>{
+ image=null;expectedHash='';controls();try{
+  const file=$('firmware').files[0];if(!file)return;
+  if(file.size<288||file.size>0x1f0000)throw Error('Arquivo fora do tamanho permitido para o C3.');
+  const bytes=new Uint8Array(await file.arrayBuffer()),view=new DataView(bytes.buffer);
+  const project=String.fromCharCode(...bytes.slice(80,112)).split('\0')[0];
+  if(bytes[0]!==0xe9||view.getUint16(12,true)!==5||bytes[23]!==1||project!=='bldsp_panel_c3')throw Error('Selecione a imagem de aplicação bldsp_panel_c3.bin, não a do S3 ou uma imagem completa.');
+  image=bytes;expectedHash=Array.from(bytes.slice(-32),v=>v.toString(16).padStart(2,'0')).join('');
+  $('file-info').textContent=file.name+' · '+Math.round(file.size/1024)+' KiB · C3';$('message').textContent='Arquivo selecionado. Pronto para enviar.';
+ }catch(e){$('file-info').textContent=e.message;}controls();
+};
+$('cancel').onclick=()=>{cancelled=true;$('cancel').disabled=true;$('message').textContent='Cancelando após o bloco atual…';};
+$('upload').onclick=async()=>{
+ if(running||!image)return;running=true;cancelled=false;currentSession=0;controls();$('progress').value=0;
+ let committed=false;
+ try{
+  const before=await api('/api/panel/ota');if(!before.online||before.pending||before.busy)throw Error('C3 indisponível para atualizar agora.');
+  $('message').textContent='Preparando a partição alternativa…';const begin=await api('/api/panel/ota/begin',{size:image.length});currentSession=begin.session;
+  let offset=0,retries=0;
+  while(offset<image.length){
+   if(cancelled)throw Error('Envio cancelado. O firmware anterior continua ativo.');
+   const end=Math.min(offset+4096,image.length);
+   try{
+    const r=await fetch('/api/panel/ota/data?session='+currentSession+'&offset='+offset,{method:'POST',headers:{'X-BLDSP':'1','Content-Type':'application/octet-stream'},body:image.slice(offset,end)});
+    const s=await r.json();if(!r.ok)throw Error(s.error||'Falha no bloco');
+    if(s.offset<=offset||s.offset>image.length)throw Error('Progresso inválido');offset=s.offset;retries=0;
+   }catch(e){
+    if(++retries>3)throw e;await sleep(500);const s=await api('/api/panel/ota');
+    if(s.session!==currentSession||!s.busy||s.offset<offset||s.offset>image.length)throw e;offset=s.offset;
+   }
+   const percent=Math.floor(offset*100/image.length);$('progress').value=percent;$('message').textContent='Enviando '+percent+'% · '+Math.round(offset/1024)+' / '+Math.round(image.length/1024)+' KiB';
+  }
+  if(cancelled)throw Error('Envio cancelado. O firmware anterior continua ativo.');
+  $('cancel').disabled=true;$('message').textContent='Validando a imagem e reiniciando o C3…';
+  // A lost final response is ambiguous: verify the new boot rather than reporting success.
+  try{await api('/api/panel/ota/end',{session:currentSession});}catch(e){$('message').textContent='Conferindo se o C3 recebeu a conclusão…';}
+  committed=true;currentSession=0;
+  const deadline=Date.now()+85000;let success=false;
+  while(Date.now()<deadline){
+   await sleep(1500);let s;try{s=await refresh();}catch(e){continue;}
+   if(s.online&&s.boot!==before.boot&&s.sha256===expectedHash&&!s.pending){success=true;break;}
+   $('message').textContent=s.online&&s.pending?'Nova versão iniciou. Validando ADCs e enlace…':'Aguardando o C3 reiniciar e confirmar o firmware…';
+  }
+  if(!success)throw Error('A nova versão não foi confirmada. Verifique o C3; ele pode ter retornado à versão anterior.');
+  $('message').textContent='Atualização concluída e confirmada pelo C3.';
+ }catch(e){
+  if(currentSession&&!committed){try{await api('/api/panel/ota/abort',{session:currentSession});}catch(ignore){}}
+  $('message').textContent=e.message;
+ }finally{running=false;currentSession=0;await refresh().catch(()=>{});controls();}
+};
+refresh().catch(()=>{});
+</script></html>

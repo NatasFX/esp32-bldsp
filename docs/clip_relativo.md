@@ -4,15 +4,15 @@ Atualização de 16/11/2026. Substitui a comparação de nível isolada e o limi
 
 ## Referência independente
 
-Média aritmética móvel das amostras válidas nos 60 segundos anteriores. A amostra atual não participa da sua própria comparação. Timestamps expiram amostras por tempo real. Todos os valores válidos, incluindo dips, atualizam essa referência independentemente da máquina de estados de CLIP. Exige um minuto de leituras para ficar pronta. Leitura inválida ou lacuna maior que 500 ms reinicia a referência. As antigas chaves NVS de calibração óptica não são usadas.
+Média aritmética móvel das amostras válidas nos 60 segundos anteriores. A amostra atual não participa da sua própria comparação. Timestamps expiram amostras por tempo real. Correção de 19/11/2026: candidatos e eventos de CLIP ficam fora da média desde a primeira amostra da queda, incluindo a amostra de recuperação. O histórico das bordas retém todas as amostras, separado da seleção usada na média. Enquanto houver candidato/CLIP, a referência fica congelada. Se o evento exceder toda a janela, mantém a última referência limpa e continua pronto, sem reaprender o LED aceso. Após recuperar, apenas amostras limpas atualizam a média; mudanças lentas de ambiente continuam sendo acompanhadas. Exige um minuto de leituras para ficar pronta. Leitura inválida ou lacuna maior que 500 ms reinicia a referência. As antigas chaves NVS de calibração óptica não são usadas.
 
 ## Máquina de estados do pulso
 
-1. Abertura de candidato exige RAW abaixo de 80% da média e uma descida maior que 20% dessa média em até 60 ms, partindo de uma leitura de pelo menos 90% da referência. Um nível baixo que foi atingido lentamente não abre candidato.
-2. A referência é congelada apenas para validar esse candidato, sem parar a média móvel. Disparo baixo = 80%; recuperação = 90% da referência congelada.
-3. Pulso curto exige pelo menos duas amostras consecutivas baixas e depois subida maior que 20% da referência em até 60 ms, atingindo o nível de recuperação. Só então emite o evento de CLIP.
-4. Uma recuperação lenta invalida um pulso curto ainda não confirmado. Uma amostra baixa isolada não conta.
-5. Com descida válida e mais de 30 amostras consecutivas baixas, confirma CLIP sustentado na 31ª amostra, sem aguardar subida. Permanece ativo até a recuperação e não conta sua borda final novamente.
+1. Abertura exige queda rápida abaixo do limiar configurado, partindo do nível de recuperação. O padrão exige descida maior que 20% em até 60 ms. Luz mudando lentamente continua rejeitada.
+2. A referência e a média ficam congeladas desde o candidato até a recuperação.
+3. Confirma CLIP assim que atinge o mínimo de amostras baixas consecutivas (padrão 2; configurável). Não aguarda subida, nem exige velocidade de recuperação do LDR.
+4. Uma vez confirmado, mantém ativo até atingir o limiar de liberação, inclusive durante retorno lento na faixa entre disparo e liberação. Conta uma vez por episódio. Antes de confirmar, um candidato pode expirar na faixa intermediária.
+5. O número de amostras de CLIP sustentado continua classificando eventos longos para a proteção. O limiar de CLIP forte continua classificando a indicação visual. Nenhuma dessas classificações depende de subida rápida.
 
 A janela de 60 ms usa os timestamps reais, não apenas a contagem de amostras. São normalmente três intervalos de 20 ms. O caso sustentado usa a contagem solicitada: cerca de 600 ms entre a primeira e a 31ª amostra na cadência nominal.
 
@@ -31,3 +31,7 @@ Gráfico manual: últimos 2 s a 20 ms, congelados até atualizar. Contagem e eve
 ## Verificação
 
 Testes nativos cobrem duas amostras e ambas as bordas, rejeição de uma única amostra, limite estrito de 20%, confirmação na 31ª amostra sem dupla contagem, aproximação lenta e patamar baixo da lanterna, subida lenta, lacunas, ADC inválido, relógio uint32 e expiração da referência. O RGB mantém seus testes de amplitude e seleção de estado. O teste físico após esta alteração ainda precisa ser repetido para avaliar a sensibilidade na montagem.
+
+Regressões de 19/11: CLIP sustentado além de 60 s, pulsos repetidos por três minutos, candidato de uma amostra rejeitado sem contaminar a média, retomada após recuperação e adaptação lenta à luz ambiente. Parâmetros agora configuráveis: ver clip_configuravel.md.
+
+Correção de 19/11/2026 para recuperação lenta: teste com a forma real registrada de queda de 63% anteriormente rejeitada; agora confirma durante a descida e permanece ativo até recuperar. Logs RAW acrescentam cand, low e sustained para distinguir candidato, sequência baixa e evento sustentado.

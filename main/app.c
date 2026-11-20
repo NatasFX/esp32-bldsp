@@ -16,6 +16,10 @@
 #include "status_led.h"
 #include "telemetry.h"
 #include "thermal_test.h"
+#include "clip_protection.h"
+#include "panel_control.h"
+#include "wifi_power.h"
+#include "dns_server.h"
 
 extern const unsigned char html_start[] asm("_binary_index_html_start");
 extern const unsigned char html_end[] asm("_binary_index_html_end");
@@ -55,6 +59,15 @@ static esp_err_t root(httpd_req_t *r) {
     httpd_resp_set_type(r,"text/html; charset=utf-8");
     httpd_resp_set_hdr(r,"Cache-Control","no-store");
     return httpd_resp_send(r,(const char*)html_start,html_end-html_start-1);
+}
+// Captive-portal probes use arbitrary hostnames and paths. Keep API errors local.
+static esp_err_t portal_redirect(httpd_req_t *r, httpd_err_code_t err) {
+    (void)err;
+    if (!strncmp(r->uri,"/api/",5)) return error(r,"404 Not Found","Endpoint inexistente");
+    httpd_resp_set_status(r,"302 Found");
+    httpd_resp_set_hdr(r,"Location","http://192.168.4.1/");
+    httpd_resp_set_hdr(r,"Cache-Control","no-store");
+    return httpd_resp_sendstr(r,"Abra o controle BLDSP em http://192.168.4.1/");
 }
 static esp_err_t reply_eq(httpd_req_t *r,const uint16_t *w,bool matches) {
     cJSON *o=cJSON_CreateObject(),*a=cJSON_AddArrayToObject(o,"words");
@@ -96,9 +109,11 @@ static esp_err_t apply_eq(httpd_req_t *r) {
     if(!valid || !valid_words(w)){ESP_LOGW("http_eq","Invalid EQ payload module=%02x",module);return error(r,"400 Bad Request","Valores de EQ inválidos");}
     ESP_LOGI("http_eq","Requested module=%02x enabled=%u pregain=%.3f dB",module,w[0],(double)(int16_t)w[1]/256);
     status_led_request_begin();
-    // Preserve the third word from a fresh read: its installed-firmware semantics
+    // Preserve the third word from the confirmed cache (fresh read if absent): its semantics
     // remain uncertain. Do not let a browser alter it.
-    esp_err_t err=dsp_read_eq(module,actual);if(err!=ESP_OK){status_led_request_end(module,false);return usb_error(r,err);}
+    esp_err_t err=ESP_OK;uint32_t revision;
+    if(!dsp_eq_snapshot(module,actual,&revision)){err=dsp_read_eq(module,actual);}
+    if(err!=ESP_OK){status_led_request_end(module,false);return usb_error(r,err);}
     w[2]=actual[2];
     err=dsp_apply_eq(module,w,actual);if(err!=ESP_OK){status_led_request_end(module,false);return usb_error(r,err);}
     bool matches=true;
@@ -124,9 +139,12 @@ void app_main(void) {
     wifi_config_t wifi={.ap={.ssid="BLDSP-Control",.password="equaliza123",.channel=6,.max_connection=2,.authmode=WIFI_AUTH_WPA2_PSK}};
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP,&wifi));
     ESP_ERROR_CHECK(esp_wifi_start());
+    wifi_power_start();
     dsp_usb_start();
     telemetry_start();
-    httpd_config_t cfg=HTTPD_DEFAULT_CONFIG();cfg.max_uri_handlers=20;cfg.stack_size=8192;cfg.recv_wait_timeout=5;cfg.send_wait_timeout=5;
+    clip_protection_start();
+    panel_start();
+    httpd_config_t cfg=HTTPD_DEFAULT_CONFIG();cfg.max_uri_handlers=48;cfg.stack_size=8192;cfg.recv_wait_timeout=5;cfg.send_wait_timeout=5;
     httpd_handle_t server;ESP_ERROR_CHECK(httpd_start(&server,&cfg));
     const httpd_uri_t routes[]={
         {.uri="/",.method=HTTP_GET,.handler=root},
@@ -140,6 +158,16 @@ void app_main(void) {
     source_control_register(server);
     telemetry_register(server);
     thermal_test_register(server);
+    clip_protection_register(server);
+    panel_register(server);
+#ifdef PANEL_OTA_SMOKE_TEST
+    extern void panel_ota_smoke_start(void);
+    panel_ota_smoke_start();
+#endif
+    wifi_power_register(server);
+    ESP_ERROR_CHECK(httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, portal_redirect));
+    dns_server_config_t dns = DNS_SERVER_CONFIG_SINGLE("*", "WIFI_AP_DEF");
+    if (!start_dns_server(&dns)) ESP_LOGW("portal", "DNS portal unavailable; use http://192.168.4.1/");
     status_led_system_ready();
     ESP_LOGI("bldsp", "Ready: Wi-Fi BLDSP-Control, http://192.168.4.1/; USB host waiting for DSP");
 }

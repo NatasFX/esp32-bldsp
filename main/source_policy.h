@@ -5,7 +5,8 @@
 #define SOURCE_BLUETOOTH_PID 0x171e
 #define SOURCE_MAX_ATTEMPTS 3
 typedef struct {
-    bool present;
+    bool present, cycle_wait_usb;
+    int64_t cycle_deadline;
     uint16_t pid;
     unsigned attempts;
     int64_t connected_at, next_attempt;
@@ -15,3 +16,5 @@ void source_policy_disconnected(source_policy_t *p);
 bool source_policy_target(const source_policy_t *p);
 bool source_policy_due(const source_policy_t *p,int64_t now);
 void source_policy_pulsed(source_policy_t *p,int64_t now);
+
+bool source_policy_begin_cycle(source_policy_t *p,int64_t now);

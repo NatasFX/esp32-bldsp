@@ -1,0 +1,1 @@
+idf_component_register(SRCS "panel.c" "ota.c" "strip.c" "../../shared/strip_visual.c" "../../shared/strip_motion.c" INCLUDE_DIRS "." "../../shared" REQUIRES app_update esp_app_format esp_wifi esp_event esp_netif nvs_flash esp_adc esp_timer esp_driver_gpio esp_driver_spi)

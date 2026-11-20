@@ -11,6 +11,7 @@
 #include "presets.h"
 #include "source_control.h"
 #include "status_led.h"
+#include "pregain_control.h"
 
 static const char *TAG="dsp_usb";
 static usb_host_client_handle_t client;
@@ -19,12 +20,28 @@ static uint8_t address;
 static int iface=-1;
 static bool gone, in_transfer, finished, profile_ok;
 static bool boot_ready;
+// Owned exclusively by the USB task; presets/front retain the unattenuated gain.
+static bool sub_base_valid;
+static uint16_t sub_base_gain;
+static unsigned sub_attenuation_q8;
 static int64_t boot_retry;
 static usb_transfer_t *transfer;
 static QueueHandle_t queue;
 static SemaphoreHandle_t lock, done;
 typedef struct {int op; uint8_t module; uint16_t words[53]; esp_err_t result;} request_t;
 static request_t request;
+static portMUX_TYPE cache_mux=portMUX_INITIALIZER_UNLOCKED;
+static uint16_t cached[2][DSP_EQ_WORDS];static bool cache_valid[2];static uint32_t cache_revision;
+bool dsp_eq_snapshot(uint8_t module,uint16_t words[DSP_EQ_WORDS],uint32_t *revision){
+    if(module!=0x91&&module!=0x93)return false;
+    unsigned i=module==0x93;
+    portENTER_CRITICAL(&cache_mux);bool valid=cache_valid[i];if(valid)memcpy(words,cached[i],106);if(revision)*revision=cache_revision;portEXIT_CRITICAL(&cache_mux);return valid;
+}
+static void cache_update(uint8_t module,const uint16_t *words){
+    unsigned i=module==0x93;portENTER_CRITICAL(&cache_mux);
+    if(!cache_valid[i]||memcmp(cached[i],words,106)){memcpy(cached[i],words,106);cache_valid[i]=true;cache_revision++;}
+    portEXIT_CRITICAL(&cache_mux);
+}
 
 static void event(const usb_host_client_event_msg_t *msg, void *arg) {
     (void)arg;
@@ -70,7 +87,7 @@ static void close_device(void) {
     source_control_usb_disconnected();
     if(iface>=0) usb_host_interface_release(client,dev,iface);
     usb_host_device_close(client,dev);
-    dev=NULL;iface=-1;gone=false;profile_ok=false;boot_ready=false;boot_retry=0;
+    dev=NULL;iface=-1;gone=false;profile_ok=false;boot_ready=false;boot_retry=0;sub_base_valid=false;
 }
 // Accept only the measured vendor usage, unnumbered 256-byte Input/Output.
 static bool report_matches(const uint8_t *p,size_t n) {
@@ -160,32 +177,102 @@ static esp_err_t check_profile(void) {
     }
     profile_ok=true;return ESP_OK;
 }
+static esp_err_t write_pregain(uint8_t module,uint16_t pregain) {
+    uint8_t frame[256];
+    uint16_t neighbour=pregain==0x8000?0x8001:(uint16_t)(pregain-1);
+    dsp_encode_eq_parameter(frame,module,1,neighbour);
+    esp_err_t err=send_frame(frame);if(err!=ESP_OK)return err;
+    vTaskDelay(pdMS_TO_TICKS(10));
+    dsp_encode_eq_parameter(frame,module,1,pregain);
+    err=send_frame(frame);if(err!=ESP_OK)return err;
+    vTaskDelay(pdMS_TO_TICKS(50));return ESP_OK;
+}
+static esp_err_t read_words(uint8_t module,uint16_t *words) {
+    uint8_t frame[256];esp_err_t err=query(module,frame);
+    if(err!=ESP_OK)return err;
+    return dsp_decode_eq_module(frame,256,module,words)?ESP_OK:ESP_ERR_INVALID_RESPONSE;
+}
+static bool words_match(const uint16_t *a,const uint16_t *b) {
+    for(int i=0;i<DSP_EQ_WORDS;i++)if(i!=2&&a[i]!=b[i])return false;
+    return true;
+}
+static esp_err_t apply_sub_attenuation(unsigned reduction) {
+    if(!sub_base_valid||reduction>24*256)return ESP_ERR_INVALID_STATE;
+    uint16_t before[DSP_EQ_WORDS],after[DSP_EQ_WORDS];
+    esp_err_t err=read_words(0x93,before);if(err!=ESP_OK)return err;
+    uint16_t target=pregain_attenuated(sub_base_gain,reduction);
+    if(before[1]!=target){err=write_pregain(0x93,target);if(err!=ESP_OK)return err;}
+    err=read_words(0x93,after);if(err!=ESP_OK)return err;
+    before[1]=target;
+    if(!words_match(before,after))return ESP_ERR_INVALID_RESPONSE;
+    sub_attenuation_q8=reduction;
+    ESP_LOGI(TAG,"Sub protection confirmed: reduction=%.3f dB base=%.3f dB effective=%.3f dB",reduction/256.,(int16_t)sub_base_gain/256.,(int16_t)target/256.);
+    return ESP_OK;
+}
+static esp_err_t execute(request_t *r);
 static esp_err_t execute(request_t *r) {
-    if(!dev || gone || iface<0)return ESP_ERR_INVALID_STATE;
+    if(!dev||gone||iface<0)return ESP_ERR_INVALID_STATE;
     esp_err_t err;uint8_t frame[256];
-    if(!profile_ok && (err=check_profile())!=ESP_OK)return err;
-    if(r->op==1) {
-        uint16_t pregain=r->words[1];
-        ESP_LOGI(TAG,"EQ TX module=%02x enabled=%u pregain=%.3f dB",r->module,r->words[0],(double)(int16_t)pregain/256);
-        if(!dsp_encode_eq_module(frame,r->module,r->words))return ESP_ERR_INVALID_ARG;
-        err=send_frame(frame);if(err!=ESP_OK)return err;
-        vTaskDelay(pdMS_TO_TICKS(50));
-        // Related SDK's bulk handler stores pregain but only reconfigures filters.
-        // Its scalar handler reconfigures gain only when the value changes.
-        // Force that handler through a one-Q8.8-step neighbour, then the target.
-        // This also repairs stale runtime gain when readback already equals target.
-        uint16_t neighbour=pregain==0x8000?0x8001:(uint16_t)(pregain-1);
-        dsp_encode_eq_parameter(frame,r->module,1,neighbour);
-        err=send_frame(frame);if(err!=ESP_OK)return err;
-        vTaskDelay(pdMS_TO_TICKS(10));
-        dsp_encode_eq_parameter(frame,r->module,1,pregain);
-        err=send_frame(frame);if(err!=ESP_OK)return err;
-        vTaskDelay(pdMS_TO_TICKS(50));
-        ESP_LOGI(TAG,"EQ pregain live update sent module=%02x",r->module);
+    if(!profile_ok&&(err=check_profile())!=ESP_OK)return err;
+    if(r->op==2)return apply_sub_attenuation(r->words[0]);
+    if(r->op==3){
+        unsigned selector=r->words[0];int16_t gain=(int16_t)r->words[1];
+        if((selector!=1 && !(selector>=7&&selector<=52&&(selector-7)%5==0)) ||
+           (selector==1?(gain < -60*256||gain>0):(gain < -24*256||gain>12*256)))return ESP_ERR_INVALID_ARG;
+        uint32_t revision;
+        if(!dsp_eq_snapshot(r->module,r->words,&revision)){err=read_words(r->module,r->words);if(err!=ESP_OK)return err;}
+        if(r->module==0x93&&sub_base_valid)r->words[1]=sub_base_gain;
+        // Gain knobs never enable an EQ/band or change type, Q or frequency.
+        if(!r->words[0] || (selector!=1&&!r->words[selector-4]))return ESP_ERR_INVALID_STATE;
+        unsigned type=selector==1?0:r->words[selector-3];
+        if(selector!=1&&type>2)return ESP_ERR_NOT_SUPPORTED;
+        r->words[selector]=(uint16_t)gain;r->op=1;
+        return execute(r);
     }
-    err=query(r->module,frame);if(err!=ESP_OK)return err;
-    if(!dsp_decode_eq_module(frame,256,r->module,r->words))return ESP_ERR_INVALID_RESPONSE;
-    ESP_LOGI(TAG,"EQ RX module=%02x enabled=%u pregain=%.3f dB",r->module,r->words[0],(double)(int16_t)r->words[1]/256);
+    uint16_t requested[DSP_EQ_WORDS];
+    if(r->op==1){
+        memcpy(requested,r->words,sizeof(requested));
+        if(r->module==0x93)r->words[1]=pregain_attenuated(requested[1],sub_attenuation_q8);
+        // The USB task serializes all writers. Compare with its last confirmed
+        // user state; a single gain change can use the measured scalar command.
+        uint16_t previous[DSP_EQ_WORDS];uint32_t revision;int changed=-1,count=0;
+        if(dsp_eq_snapshot(r->module,previous,&revision)){
+            for(int i=0;i<DSP_EQ_WORDS;i++)if(i!=2&&previous[i]!=requested[i]){changed=i;count++;}
+        }else count=2;
+        bool scalar=count==1&&(changed==1||(changed>=7&&(changed-7)%5==0));
+        ESP_LOGI(TAG,"EQ TX module=%02x path=%s selector=%d",r->module,scalar?"scalar":"bulk",changed);
+        if(scalar){
+            if(changed==1)err=write_pregain(r->module,r->words[1]);
+            else {dsp_encode_eq_parameter(frame,r->module,changed,r->words[changed]);err=send_frame(frame);}
+            if(err!=ESP_OK)return err;
+        }else{
+            if(!dsp_encode_eq_module(frame,r->module,r->words))return ESP_ERR_INVALID_ARG;
+            err=send_frame(frame);if(err!=ESP_OK)return err;
+            vTaskDelay(pdMS_TO_TICKS(50));
+            // Bulk stores gain; neighbour+target updates live pre-gain.
+            err=write_pregain(r->module,r->words[1]);if(err!=ESP_OK)return err;
+        }
+        uint16_t actual[DSP_EQ_WORDS];err=read_words(r->module,actual);if(err!=ESP_OK)return err;
+        if(scalar&&!words_match(r->words,actual)){
+            ESP_LOGW(TAG,"Scalar readback mismatch; retrying confirmed bulk path");
+            if(!dsp_encode_eq_module(frame,r->module,r->words))return ESP_ERR_INVALID_ARG;
+            err=send_frame(frame);if(err!=ESP_OK)return err;
+            vTaskDelay(pdMS_TO_TICKS(50));
+            err=write_pregain(r->module,r->words[1]);if(err!=ESP_OK)return err;
+            err=read_words(r->module,actual);if(err!=ESP_OK)return err;
+        }
+        if(!words_match(r->words,actual))return ESP_ERR_INVALID_RESPONSE;
+        memcpy(r->words,actual,sizeof(actual));
+        if(r->module==0x93){sub_base_gain=requested[1];sub_base_valid=true;r->words[1]=sub_base_gain;}
+    }else{
+        err=read_words(r->module,r->words);if(err!=ESP_OK)return err;
+        if(r->module==0x93&&sub_base_valid){
+            if(r->words[1]==pregain_attenuated(sub_base_gain,sub_attenuation_q8))r->words[1]=sub_base_gain;
+            else ESP_LOGW(TAG,"Sub gain differs from last confirmed target; returning physical value until next write");
+        }
+    }
+    cache_update(r->module,r->words);
+    ESP_LOGI(TAG,"EQ RX module=%02x enabled=%u user_pregain=%.3f dB",r->module,r->words[0],(int16_t)r->words[1]/256.);
     return ESP_OK;
 }
 static bool apply_boot_preset(void) {
@@ -248,3 +335,12 @@ static esp_err_t call(int op,uint8_t module,const uint16_t *in,uint16_t *out) {
 }
 esp_err_t dsp_read_eq(uint8_t module,uint16_t w[DSP_EQ_WORDS]){return call(0,module,NULL,w);}
 esp_err_t dsp_apply_eq(uint8_t module,const uint16_t w[DSP_EQ_WORDS],uint16_t actual[DSP_EQ_WORDS]){return call(1,module,w,actual);}
+
+esp_err_t dsp_set_sub_attenuation(unsigned q8){
+    if(q8>24*256)return ESP_ERR_INVALID_ARG;
+    uint16_t words[DSP_EQ_WORDS]={0};words[0]=(uint16_t)q8;return call(2,0x93,words,NULL);
+}
+
+esp_err_t dsp_set_gain(uint8_t module,uint8_t selector,int16_t gain){
+    uint16_t words[DSP_EQ_WORDS]={selector,(uint16_t)gain};return call(3,module,words,NULL);
+}

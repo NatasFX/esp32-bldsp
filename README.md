@@ -7,14 +7,14 @@ Firmware ESP-IDF **5.4.x** (build validado com v5.4-dev), ESP32-S3 N16R8, para B
 - Música: celular → Bluetooth → BLDSP.
 - Ajustes: celular → Wi-Fi do ESP32 → USB HID → BLDSP.
 - Rede **BLDSP-Control**, senha inicial **equaliza123**, página **http://192.168.4.1/**. Não exige APK, internet ou CDN. Pode adicionar um atalho ao navegador. Alterar a senha em `main/app.c` antes de usar fora da bancada.
-- O preset 1 é carregado ao abrir a página. O firmware também o aplica às duas saídas após inicializar/reconectar o USB, mesmo sem navegador aberto.
-- Editar valores ou ligar/desligar filtros atualiza o gráfico e enfileira a aplicação automaticamente. O envio agrupa movimentos em janelas de 180 ms, mantendo somente o ajuste mais recente de cada saída; as requisições são serializadas. Retorno antigo não sobrescreve edição mais recente. Valores incompletos/inválidos não são enviados. Falhas exibem estado de espera e tentam novamente em 1,5 s.
+- O firmware aplica o preset 1 após inicializar/reconectar o USB. Quando o C3 conecta ou reconecta, suas posições físicas assumem os ganhos configurados; se desconectar, os ajustes permanecem. Abrir o portal apenas mostra o estado atual, sem reaplicar o preset.
+- Editar valores ou ligar/desligar filtros atualiza o gráfico e enfileira a aplicação automaticamente. O envio agrupa movimentos em janelas de 40 ms, mantendo somente o ajuste mais recente de cada saída; as requisições são serializadas. Retorno antigo não sobrescreve edição mais recente. Valores incompletos/inválidos não são enviados. Falhas exibem estado de espera e tentam novamente em 1,5 s.
 - Não há botões Aplicar ou Reler. Consultas internas continuam sendo usadas para confirmar o que o DSP recebeu e preservar campos desconhecidos.
 - **Salvar preset** grava somente na NVS do ESP32; não grava na flash da BLDSP. Na prévia, grava no localStorage do navegador. Não há escrita NVS a cada movimento de slider.
 
 ## Interface
 
-Evolução planejada: [roadmap de telemetria e proteção](docs/roadmap_telemetria_protecao.md), com VCC, NTCs, monitoramento no celular, isolamento USB, clipping, corrente e supervisor local de proteção. NTC, estimativa da bobina, LDR e indicação visual já estão implementados; as proteções automáticas continuam como propostas.
+Evolução planejada: [roadmap de telemetria e proteção](docs/roadmap_telemetria_protecao.md), com VCC, NTCs, monitoramento no celular, isolamento USB, clipping, corrente e supervisor local de proteção. NTC, estimativa da bobina, LDR e indicação visual já estão implementados; a proteção por CLIP já é configurável no portal.
 
 - Abas estéreo (Music Pre EQ **0x91 / aba 2**) e subwoofer (Rec Pre EQ **0x93 / aba 4**). O encaminhamento físico do estéreo ainda precisa de confirmação na bancada.
 - Quatro botões de preset imediatamente abaixo das abas. Cada preset guarda as duas saídas. Trocar de preset descarta edições não salvas sem confirmação, carrega e aplica automaticamente ambos os EQs. Reset apaga o slot salvo e aplica EQ plano com pré-ganho 0 às duas saídas.
@@ -31,7 +31,7 @@ Evolução planejada: [roadmap de telemetria e proteção](docs/roadmap_telemetr
 
 Mostra separadamente **NTC · temperatura lida** e **Bobina · estimada**. O observador `joint_v2` usa apenas o NTC e sua evolução, sem potência informada; média de dez amostras e filtragem reduzem oscilações. Ambiente ajustável, salvo em NVS. O estado da estrutura possui dissipação; testes incluem 72 horas de simulação e reprodução dos dois ensaios. [Modelo, erros e limitações](docs/ensaios/20261116/joint_v2/estudo_v2.md).
 
-Aba com NTC no GPIO18 (estimativa 10 kΩ/B3950), LDR no LED CLIP no GPIO17, histórico e eventos guardados na RAM do ESP mesmo sem celular (300 amostras e 64 eventos), média/mínima/máxima e referência óptica móvel de 60 segundos. O histórico é limpo ao reiniciar o ESP. Sensores inferiores para GND e pull-ups externos de 10 kΩ para 3V3. [Montagem e limitações](docs/sensores_monitoramento.md). Detecção por pulso: referência móvel RAW de 60 s, descida e subida rápidas (até 60 ms) e pelo menos duas amostras abaixo de 80% da referência. Mais de 30 amostras baixas consecutivas, após descida válida, confirma CLIP sustentado sem esperar recuperação. Forma referência por 60 s após iniciar ou perder leituras. RGB pisca vermelho a 4 Hz, com retenção visual de 2 s; sem controle de ganho. Captura manual RAW dos últimos 2 s a 20 ms e log serial CLIP_RAW em cada ciclo. [Detalhes](docs/clip_relativo.md). Somente leitura: não há redução automática de ganho por sensores. A política futura de tolerar pico isolado de ~50 ms e avaliar clipping persistente/recorrente por ~1 s está no roadmap.
+Aba com NTC no GPIO18 (estimativa 10 kΩ/B3950), LDR no LED CLIP no GPIO17, histórico e eventos guardados na RAM do ESP mesmo sem celular (300 amostras e 64 eventos), média/mínima/máxima e referência óptica móvel de 60 segundos. O histórico é limpo ao reiniciar o ESP. Sensores inferiores para GND e pull-ups externos de 10 kΩ para 3V3. [Montagem e limitações](docs/sensores_monitoramento.md). O detector usa referência móvel de 60 s, exclui janelas de CLIP da referência e possui parâmetros persistidos em NVS. Avisos, diagnóstico de sensor, redução automática do pré-ganho do sub e recuperação lenta são configuráveis. [Detector e parâmetros](docs/clip_configuravel.md), [lógica relativa](docs/clip_relativo.md). O observador térmico permanece informativo, sem proteção térmica automática.
 
 ## LED RGB
 
@@ -39,11 +39,31 @@ GPIO48, brilho limitado a 50%: arco-íris quando o controle está operacional; a
 
 ## USB e persistência
 
-Descobre interface HID para VID8888, PID171E/1719, sem fixar número da interface. Exige descritor FF00:55AA com Input/Output sem report ID de 256 bytes, versão medida e nomes dos dois módulos antes de escrever. O byte reservado 00 da API Windows não entra no payload USB. SET_REPORT(Output) e GET_REPORT(Input) usam EP0. A hipótese precisa de validação no ESP com o descritor real.
+Descobre interface HID para VID8888, PID171E/1719, sem fixar número da interface. Exige descritor FF00:55AA com Input/Output sem report ID de 256 bytes, versão medida e nomes dos dois módulos antes de escrever. O byte reservado 00 da API Windows não entra no payload USB. SET_REPORT(Output) e GET_REPORT(Input) usam EP0. O fluxo foi validado na bancada com a BLDSP.
 
 Na inicialização/reconexão, aplica preset 1 a estéreo e sub e lê de volta. A terceira palavra do bloco é preservada de consulta prévia; sua semântica nesta aplicação ainda é incerta. Solicitações HTTP aguardam bootstrap USB válido. Se uma transferência ficar sem callback por três segundos, o ESP reinicia para não reutilizar DMA ativo; não envia reset/boot ao DSP.
 
 Presets: GET/POST `/api/preset?slot=1..4`, blobs versionados na namespace NVS `eq_presets`; commit explícito somente ao salvar/resetar ou provisionar. Não há endpoint de save no DSP nem comandos FC/FD no fluxo USB atual. Capturas do save original continuam documentadas em [docs/protocolo_bp1048b2.md](docs/protocolo_bp1048b2.md) como referência histórica.
+
+## Painel remoto C3 e automação
+
+- Cinco potenciômetros com funções configuráveis, diagnóstico RAW/mV e estado do enlace: [painel C3](docs/painel_c3.md).
+- Fita WS2812 RGB de 22 LEDs, renderização a 120 Hz, paletas, resposta aos pots e CLIP vermelho em intensidade 255. Desconectado: giro à esquerda em 8 s e respiração de 30–100% em 4 s. [Efeitos](docs/fita_ws2812.md).
+- Relógio sincronizado automaticamente pelo portal e brilho por horários solares/CSV: [brilho automático](docs/brilho_automatico.md).
+- Potência Wi-Fi ajustável; padrão de 2 dBm validado para eliminar interferência audível nesta montagem: [diagnóstico](docs/diagnostico_wifi.md).
+- [Histórico de entregas](CHANGELOG.md). Documentos de ensaios e propostas antigas são registros históricos; os guias acima descrevem as funções atuais.
+
+## Fluxo recomendado de desenvolvimento
+
+Executar na raiz do repositório:
+
+```powershell
+.\tools\fw.ps1 test
+.\tools\fw.ps1 deploy s3
+.\tools\fw.ps1 ota
+```
+
+O último comando atualiza o C3 sem fio e restaura o S3 normal ao terminar. Logs completos ficam em `build/pipeline/`, fora do Git. [Pipeline e recuperação](docs/pipeline.md).
 
 ## Compilar
 
@@ -56,7 +76,7 @@ idf.py build
 idf.py -p COMx flash monitor
 ```
 
-Usar a USB-UART para programar/depurar e reservar a USB nativa para a BLDSP. Flash 16 MB, partição factory de 3 MB, console UART. Sem OTA, captive portal ou conexão ao roteador nesta versão.
+Usar a USB-UART para programar/depurar e reservar a USB nativa para a BLDSP. Flash 16 MB, partição factory de 3 MB, console UART. Portal cativo disponível. O C3 recebe OTA por ESP-NOW através do S3; o S3 é atualizado por USB-UART. Não exige conexão ao roteador.
 
 ## Bancada e validação pendente
 

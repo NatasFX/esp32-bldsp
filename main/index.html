@@ -16,10 +16,18 @@
 [hidden]{display:none!important}.app-tabs{display:flex;gap:6px;margin:18px 0 10px;padding:5px;background:#10192a;border:1px solid #2e3b53;border-radius:14px}.app-tabs button{flex:1;background:transparent;color:#aebbd0;padding:11px 8px;font-size:14px}.app-tabs button[aria-selected=true]{background:#26344b;color:#fff}.monitor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.monitor-card{padding:18px;background:#152037;border:1px solid #2e3b53;border-radius:16px;min-width:0}.monitor-card h2{font-size:14px;color:#b8c6dc;font-weight:500}.monitor-value{font-size:36px;font-weight:650;margin:16px 0 10px;font-variant-numeric:tabular-nums;letter-spacing:-1px}.monitor-value small{font-size:18px;color:#aebbd0}.monitor-badge{display:inline-block;font-size:11px;padding:5px 8px;border:1px solid #40516c;border-radius:20px;color:#bac8df}.monitor-badge[data-tone=warn]{color:#fbbf72;border-color:#8d693b}.monitor-badge[data-tone=danger]{color:#ff91a7;border-color:#98475c}.monitor-badge[data-tone=ok]{color:#75e0ba;border-color:#367c69}.monitor-card .mini{line-height:1.6;margin:10px 0 0}.monitor-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:20px 0 10px}.monitor-heading .mini{margin:0;font-size:11px}.monitor-plot{width:100%;height:170px;display:block;margin-top:14px}.monitor-plot line{stroke:#2e3b53;stroke-width:1}.monitor-plot path{stroke:#fbbf72;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round}.monitor-foot{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#91a3bf;margin-top:8px}.monitor-alert{padding:13px 15px;border:1px solid #7c5a35;background:#29251f;border-radius:12px;font-size:13px;color:#f4cf9e;line-height:1.5}.monitor-alert[data-tone=danger]{border-color:#98475c;background:#321e2b;color:#ffb2c2}.monitor-calibration{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.monitor-calibration button{font-size:12px;padding:10px;background:#243148;color:#e5e7eb}.monitor-events{white-space:pre-line;font-size:12px;line-height:1.8;color:#b8c6dc}.monitor-clip-value{font-size:27px;letter-spacing:-.5px}.monitor-note{font-size:12px;line-height:1.6;margin:12px 0;color:#91a3bf}@media(max-width:400px){.monitor-card{padding:13px}.monitor-value{font-size:30px}.monitor-clip-value{font-size:22px}}
 .monitor-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.monitor-stats div{padding:10px 6px;background:#10192a;border-radius:9px;text-align:center}.monitor-stats span{display:block;font-size:11px;color:#91a3bf}.monitor-stats strong{display:block;margin-top:7px;font-size:17px;font-variant-numeric:tabular-nums}.monitor-stat-mean strong{color:#75e0ba}.monitor-axis{fill:#91a3bf;font:11px system-ui}#monitor-temp-mean{stroke:#75e0ba;stroke-dasharray:5 4;stroke-width:1.5}.monitor-events{max-height:280px;overflow:auto}
 #monitor-raw-path{stroke:#75e0ba}#monitor-raw-limit-line{stroke:#fbbf72;stroke-dasharray:5 4;stroke-width:1.5}
+
+.clip-banner{display:flex;gap:12px;align-items:center;margin:12px 0;padding:12px 14px;background:#132a28;border:1px solid #32645a;border-radius:12px;font-size:12px;line-height:1.5}.clip-banner strong{font-size:14px;white-space:nowrap}.clip-banner span{color:#abc4bd}.clip-banner[data-state=warning]{background:#30291d;border-color:#936c35}.clip-banner[data-state=warning] span{color:#e6c994}.clip-banner[data-state=clip]{background:#5b1726;border-color:#fb7185;color:white}.clip-banner[data-state=clip] span{color:#ffd7dc}.clip-banner[data-state=unknown]{background:#152037;border-color:#40516c}.clip-banner[data-state=unknown] span{color:#aebbd0}
+#clip-effect{position:fixed;inset:0;z-index:900;pointer-events:none;opacity:0;transition:opacity .9s ease-out}body.clip-flashing #clip-effect{opacity:1;transition:opacity .18s ease-in}#clip-effect-pulse{position:absolute;inset:0;border:8px solid #ff315b;background:rgba(255,32,72,.18);box-shadow:inset 0 0 100px 20px #ff184a88;animation:clip-pulse 1s ease-in-out infinite}#clip-callout{position:absolute;top:12px;left:50%;transform:translateX(-50%);padding:10px 30px;border:2px solid #ffd9e0;border-radius:12px;background:#c61942;color:white;font-size:28px;font-weight:800;letter-spacing:2px;box-shadow:0 4px 30px #0008}@keyframes clip-pulse{0%,100%{opacity:.4}50%{opacity:1}}@media(prefers-reduced-motion:reduce){#clip-effect-pulse{animation:none;opacity:.65}}
+.clip-info{display:flex;flex-direction:column;gap:3px;min-width:0}.clip-info .coil-info{font-size:11px;color:#aebbd0}.coil-info strong{font-size:12px;font-weight:500}.coil-info strong.hot{color:#ff707e}.coil-info strong.critical{font-size:20px;font-weight:700}.main-thermal{display:flex;justify-content:flex-end;gap:8px;align-items:baseline;margin:8px 2px 12px;color:#a8b9ce;font-size:12px}.main-thermal strong{font-size:18px;color:#e6edf7;font-weight:600}.ntc-footer{position:fixed;bottom:0;left:0;right:0;z-index:60;display:flex;justify-content:space-between;gap:12px;padding:8px max(14px,calc((100vw - 700px)/2));padding-bottom:max(8px,env(safe-area-inset-bottom));background:#10192af5;border-top:1px solid #29394f;color:#8fa4bd;font-size:11px}.ntc-footer strong{color:#b8c8db;font-weight:500}body{padding-bottom:50px}.clip-banner{transition:background .6s,border-color .6s}
+.protection-panel{border:1px solid #40516c;border-radius:14px;padding:14px;background:#131e31;margin:12px 0}.protection-panel summary{font-size:14px;font-weight:600;cursor:pointer}.protection-panel summary span{font-size:11px;font-weight:400;color:#a8b9ce}.protection-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.protection-grid label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#acbdd4}.protection-grid input{width:100%;padding:10px;color:white;background:#0c1626;border:1px solid #40516c;border-radius:8px;font-size:16px;box-sizing:border-box}.protection-options{display:flex;flex-direction:column;gap:12px;margin:18px 0;font-size:13px}.protection-options label{display:flex;flex-direction:row;align-items:center;gap:10px;text-align:left}.protection-options input{width:20px;height:20px;accent-color:#fbbf72}.protection-actions{display:flex;flex-wrap:wrap;gap:8px}.protection-actions button{font-size:12px;padding:11px 12px}.protection-live{font-size:12px;line-height:1.6;color:#fbbf72;margin:12px 0 0}.preview-controls{display:flex;gap:8px;flex-wrap:wrap;padding:10px 0}.preview-controls button{font-size:11px;padding:8px;background:#29384e;color:#d9e5f5}
+.pot-live{margin-top:14px;padding:12px;background:#0c1626;border-radius:10px}.pot-live-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.pot-percent{font-size:22px;color:#75dfc7;font-variant-numeric:tabular-nums}.pot-live progress{width:100%;height:12px;margin:8px 0;accent-color:#75dfc7}.pot-values{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#b8c8db;font-variant-numeric:tabular-nums}.pot-live[data-stale=true]{opacity:.45}.pot-pickup{font-size:12px;color:#fbbf72;line-height:1.4;margin:8px 0 0}#panel-live-state{font-variant-numeric:tabular-nums}
 </style></head><body>
 <header class="page-head"><div><h1 id="page-title">Equalizador</h1><p class="intro">BLDSP · controle de áudio 2.1</p></div><div id="eq-switch" class="eq-switch"><label><input id="enabled" type="checkbox" disabled>EQ ativo</label><button id="sync-status" class="sync-indicator" type="button" data-state="pending" aria-label="Sincronizando" title="Sincronizando" aria-live="polite"></button><div id="status" class="sync-detail" role="status" aria-live="polite" hidden>Conectando…</div></div></header>
-<nav class="app-tabs" role="tablist" aria-label="Seções"><button id="view-eq" type="button" role="tab" aria-selected="true" aria-controls="eq-view">Equalizador</button><button id="view-monitor" type="button" role="tab" aria-selected="false" aria-controls="monitor-view">Monitoramento</button></nav>
+<div id="clip-effect" aria-hidden="true"><div id="clip-effect-pulse"></div><div id="clip-callout">CLIP</div></div><aside id="clip-banner" class="clip-banner" data-state="unknown" role="status"><strong id="clip-label">CLIP · aguardando</strong><div class="clip-info"><span id="clip-detail">Buscando o estado do amplificador…</span><span class="coil-info">Bobina est. <strong id="main-coil">— °C</strong></span></div></aside><div id="preview-controls" class="preview-controls" hidden><button id="preview-clip" type="button">CLIP breve</button><button id="preview-hard" type="button">Sequência forte · 5 s</button><button id="preview-rail" type="button">Simular LDR desconectado</button><button id="preview-clear" type="button">Limpar simulação</button></div>
+<nav class="app-tabs" role="tablist" aria-label="Seções"><button id="view-eq" type="button" role="tab" aria-selected="true" aria-controls="eq-view">Equalizador</button><button id="view-monitor" type="button" role="tab" aria-selected="false" aria-controls="monitor-view">Monitoramento</button><button id="view-panel" type="button" role="tab" aria-selected="false" aria-controls="panel-view">Painel</button></nav>
 <main id="eq-view" role="tabpanel" aria-labelledby="view-eq">
+
 <nav class="tabs" role="tablist" aria-label="Saída de áudio"><button id="tab-stereo" role="tab" aria-selected="false">Estéreo · L + R</button><button id="tab-sub" role="tab" aria-selected="true">Subwoofer</button></nav>
 <section class="presets"><div class="preset-buttons" role="group" aria-label="Presets"><button id="preset-1" type="button" aria-pressed="true">1</button><button id="preset-2" type="button" aria-pressed="false">2</button><button id="preset-3" type="button" aria-pressed="false">3</button><button id="preset-4" type="button" aria-pressed="false">4</button></div><div class="preset-footer"><span class="mini">Presets · estéreo + sub</span><button id="preset-save" disabled>Salvar preset</button><button id="preset-reset" class="secondary" disabled>Reset</button></div></section>
 <section class="pregain-panel" aria-label="Volume de pré-ganho">
@@ -27,6 +35,9 @@
  <input id="pregain-slider" type="range" min="0" max="1000" step="1" value="667" aria-label="Volume de pré-ganho" disabled>
  <div class="pregain-endpoints"><span>Corte</span><span>+3 dB</span></div><input id="pregain" type="hidden" value="0">
 </section>
+<p id="protection-live" class="protection-live">Subwoofer · sem redução automática aplicada</p>
+
+
 <div class="chart-context">
  <div class="chart-top"><h2 id="chart-title">Resposta · Subwoofer</h2></div>
  <div class="chart-options"><label><input id="individual" type="checkbox" checked>Filtros</label><label><input id="compare" type="checkbox">Comparar saídas</label></div>
@@ -40,7 +51,29 @@
 
 <form id="editor"><div id="bands"></div></form>
 <p class="mini">A música segue no Bluetooth do celular. A rede Wi-Fi serve para os ajustes.</p>
-<details><summary>Fonte de áudio</summary><p class="mini">Bluetooth é selecionado automaticamente após a conexão USB. Use o botão para tentar novamente.</p><button id="source-pulse" class="secondary" type="button" disabled>Ativar Bluetooth</button><p id="source-result" class="mini" role="status" aria-live="polite"></p></details>
+<details><summary>Fonte de áudio</summary><p class="mini">Bluetooth é selecionado automaticamente após a conexão USB. Use o botão para reativar. Se já estiver em Bluetooth, passa pelo modo USB e retorna ao Bluetooth.</p><button id="source-pulse" class="secondary" type="button" disabled>Ativar Bluetooth</button><p id="source-result" class="mini" role="status" aria-live="polite"></p></details>
+<footer class="ntc-footer"><span>NTC · leitura do sensor</span><strong id="main-ntc">— °C</strong></footer>
+</main>
+<main id="panel-view" role="tabpanel" aria-labelledby="view-panel" hidden>
+<div class="monitor-heading"><h2>Painel físico</h2></div><p class="mini">Leituras ao vivo, mapeamento dos cinco potenciômetros e configurações do painel C3. Sentido invertido: 0 V = máximo; tensão alta = mínimo.</p>
+<details id="panel-settings" class="protection-panel" open><summary><svg viewBox="0 0 24 24" width="19" height="19" style="vertical-align:middle" aria-hidden="true"><circle cx="12" cy="13" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 13L16 8M4 6L2 4M12 3V0M20 6L22 4" stroke="currentColor" stroke-width="2"/></svg> Potenciômetros <span id="panel-link">· aguardando C3</span></summary>
+<p class="mini">Cinco controles de ganho. Após trocar preset ou mexer pelo celular, alcance o valor atual com o potenciômetro para assumir o controle. Filtros desativados permanecem desativados.</p>
+<label class="check"><input id="panel-enabled" type="checkbox">Habilitar painel físico</label><p id="panel-live-state" class="mini" role="status">Aguardando leituras do C3.</p><div id="panel-bindings"></div><button id="panel-save" type="button">Salvar potenciômetros</button><p id="panel-message" class="mini" role="status">Mapeamento salvo no ESP principal. OLED sem uso.</p><p><a href="/panel-update">Atualizar firmware do C3 sem cabo USB</a></p></details>
+<details class="protection-panel"><summary>Fita LED · painel C3</summary><p class="mini">WS2812 RGB no GPIO7. Rainbow suave em uso normal; CLIP breve dá um flash vermelho. Duração e repetição aumentam a presença do vermelho, com fade-out. Sem enlace com o S3, o rainbow gira para a esquerda; conectado, para a direita.</p><label class="check"><input id="strip-enabled" type="checkbox" checked>Habilitar fita</label><div class="protection-grid"><label>Segmentos endereçáveis<input id="strip-count" type="number" min="1" max="150" step="1" value="22"></label><label>Brilho · %<input id="strip-brightness" type="number" min="0" max="100" step="1" value="30"></label><label>Animação<select id="strip-mode"><option value="0">Aurora suave</option><option value="1">Arco-íris deslizante</option><option value="2">Respiração cromática</option></select></label><label>Paleta<select id="strip-palette"><option value="0">Rainbow clássico</option><option value="1">Oceano</option><option value="2">Fogo</option><option value="3">Aurora boreal</option><option value="4">Pôr do sol</option><option value="5">Synthwave</option><option value="6">Floresta</option><option value="7">Gelo</option><option value="8">Algodão doce</option><option value="9">Dourado</option><option value="10">Brasa</option></select></label></div><div id="strip-palette-preview" style="height:24px;border-radius:8px;margin:10px 0" role="img" aria-label="Prévia da paleta"></div><button id="strip-save" type="button">Salvar fita</button><p id="strip-message" class="mini" role="status">22 segmentos, brilho inicial 30%. A duração é estimada pelo LDR, não uma medida da distorção.</p></details>
+<details class="protection-panel"><summary>Brilho automático · horário solar</summary>
+<p class="mini">Hora sincronizada automaticamente com este telefone enquanto o portal está aberto. Referência inicial aproximada do RS (30° S, 53° O); ajuste as coordenadas para sua região. Após desligar o ESP, abra o portal para sincronizar novamente.</p>
+<label class="check"><input id="light-enabled" type="checkbox">Brilho automático</label>
+<label class="check"><input id="light-smooth" type="checkbox" checked>Transições suaves entre os pontos</label>
+<div class="protection-grid"><label>Latitude<input id="light-lat" type="number" min="-89.999" max="89.999" step="0.0001" value="-30"></label><label>Longitude<input id="light-lon" type="number" min="-180" max="180" step="0.0001" value="-53"></label></div>
+<p id="light-location" class="mini">O GPS será tentado automaticamente se o navegador permitir. No HTTP local, pode ser necessário preencher coordenadas.</p>
+<label>Programa · horário, brilho %<textarea id="light-steps" rows="6" spellcheck="false" style="width:100%;background:#0c1626;color:#e5e7eb;padding:12px;border-radius:8px;font:14px monospace">sunrise-1,15
+sunrise,60
+12:00,100
+17:00,60
+sunset+30,15</textarea></label>
+<p class="mini">2 a 12 linhas. sunrise/sunset aceitam deslocamento em minutos, ex.: sunset+30. Na opção suave, sunrise-1 mantém 15% até um minuto antes do nascer do sol. CLIP continua em vermelho máximo.</p>
+<button id="light-save" type="button">Salvar brilho automático</button><p id="light-live" class="mini" role="status">Aguardando relógio do ESP.</p><p id="light-message" class="mini" role="status">Sem hora válida, usa o brilho manual da fita.</p></details>
+<details class="protection-panel"><summary>Wi-Fi · potência de transmissão</summary><p class="mini">Limite do rádio do ESP principal, usado pelo Wi-Fi e ESP-NOW. O C3 permanece em 2 dBm. Aumente aos poucos para testar alcance e ruído no áudio.</p><label>Potência máxima<select id="wifi-power"><option value="8">2 dBm · padrão</option><option value="20">5 dBm</option><option value="28">7 dBm</option><option value="34">8.5 dBm</option><option value="44">11 dBm</option><option value="52">13 dBm</option><option value="56">14 dBm</option><option value="60">15 dBm</option><option value="66">16.5 dBm</option><option value="72">18 dBm</option><option value="80">20 dBm</option></select></label><p id="wifi-current" class="mini">Lendo limite do ESP…</p><div class="protection-actions"><button id="wifi-save" type="button">Aplicar e salvar</button><button id="wifi-low" type="button" class="secondary">Voltar a 2 dBm</button></div><p id="wifi-message" class="mini" role="status">Aplica sem reiniciar; persiste após desligar. É um limite configurado, não uma medição da potência irradiada.</p></details>
 </main>
 <main id="monitor-view" role="tabpanel" aria-labelledby="view-monitor" hidden>
  <div class="monitor-heading"><h2>Falante e amplificador</h2><span id="monitor-connection" class="monitor-badge">Aguardando ESP</span></div>
@@ -50,6 +83,22 @@
   <section class="monitor-card"><h2>Bobina · estimada</h2><div class="monitor-value"><span id="monitor-coil">—</span> <small>°C</small></div><span id="monitor-coil-state" class="monitor-badge" data-tone="warn">Aguardando NTC</span><p id="monitor-coil-detail" class="mini">Modelo v2 · sem leitura de potência</p></section>
   <section class="monitor-card"><h2>Clipping · amplificador</h2><div id="monitor-clip" class="monitor-value monitor-clip-value">Sem leitura</div><span id="monitor-clip-state" class="monitor-badge" data-tone="warn">A calibrar</span><p id="monitor-clip-electric" class="mini">LDR no LED CLIP · GPIO17</p></section>
  </div>
+<details class="protection-panel"><summary>Sensibilidade do detector de CLIP</summary><p class="mini">Amostras a cada 20 ms. Queda menor aumenta a sensibilidade; janela da descida maior aceita quedas mais lentas. O retorno do LDR pode ser lento: o evento fica ativo até o nível de liberação. Salvar reinicia a formação da média. A redução automática de volume é configurada separadamente abaixo.</p><div class="protection-grid"><label>Queda de detecção · %<input id="detect-drop_percent" type="number" min="1" max="80" step="1" value="20"></label><label>Queda residual para liberar · %<input id="detect-release_drop_percent" type="number" min="0" max="79" step="1" value="10"></label><label>Janela da descida · ms<input id="detect-edge_window_ms" type="number" min="20" max="500" step="1" value="60"></label><label>Amostras baixas mínimas<input id="detect-min_low_samples" type="number" min="1" max="25" step="1" value="2"></label><label>Amostras para CLIP sustentado<input id="detect-sustained_samples" type="number" min="1" max="250" step="1" value="31"></label><label>Janela da média · ms<input id="detect-window_ms" type="number" min="5000" max="60000" step="1" value="60000"></label><label>Amostras para CLIP forte visual<input id="detect-hard_min_samples" type="number" min="1" max="250" step="1" value="6"></label></div><button id="detect-save" type="button">Salvar detector no ESP</button><button id="detect-reset" type="button" class="secondary">Valores padrão</button><p id="detect-message" class="mini" role="status">Ajustes persistem após desligar o ESP.</p></details>
+<details id="protection-panel" class="protection-panel"><summary>Proteção por CLIP <span id="protection-summary">· desativada</span></summary>
+<p class="mini">Reduz apenas o pré-ganho do subwoofer (saída 4). Seus ajustes e presets permanecem como referência; a redução é aplicada separadamente no ESP.</p>
+<div class="protection-options"><label><input id="protect-enabled" type="checkbox">Habilitar redução automática</label><label><input id="protect-recovery" type="checkbox" checked>Recuperar lentamente após um período sem CLIP</label></div>
+<div class="protection-grid">
+<label>Clips para começar<input id="protect-events" type="number" min="2" max="20" step="1" value="3"></label>
+<label>Janela de repetição · s<input id="protect-window" type="number" min="0.5" max="10" step="0.1" value="2"></label>
+<label>Redução por passo · dB<input id="protect-step" type="number" min="0.1" max="3" step="0.1" value="0.5"></label>
+<label>Intervalo entre reduções · s<input id="protect-interval" type="number" min="0.25" max="5" step="0.05" value="1"></label>
+<label>Redução máxima · dB<input id="protect-max" type="number" min="0.5" max="24" step="0.5" value="12"></label>
+<label>Espera sem CLIP · s<input id="protect-quiet" type="number" min="2" max="60" step="1" value="8"></label>
+<label>Recuperação por passo · dB<input id="protect-recover-step" type="number" min="0.1" max="1" step="0.05" value="0.25"></label>
+<label>Intervalo da recuperação · s<input id="protect-recover-interval" type="number" min="0.5" max="10" step="0.5" value="2"></label>
+</div><p class="mini">CLIP sustentado também inicia a redução. Se voltar a clipar, a recuperação para e a proteção retoma os cortes. Sem referência válida ou com suspeita de desconexão, o volume não sobe automaticamente.</p>
+<div class="protection-actions"><button id="protect-save" type="button">Salvar proteção</button><button id="protect-restore" type="button" class="secondary">Restaurar lentamente</button></div>
+<p id="protect-message" class="mini" role="status">Desativada até você habilitar e salvar. Desativar mantém a redução já aplicada, sem salto de volume.</p></details>
  <section class="monitor-card"><div class="monitor-heading" style="margin-top:0"><h2>NTC · histórico do ESP</h2><span class="mini">Janela de 5 min</span></div><div class="monitor-stats"><div><span>Mínima</span><strong id="monitor-temp-min">—</strong></div><div class="monitor-stat-mean"><span>Média</span><strong id="monitor-temp-avg">—</strong></div><div><span>Máxima</span><strong id="monitor-temp-max">—</strong></div></div><svg class="monitor-plot" viewBox="0 0 360 190" preserveAspectRatio="none" role="img" aria-label="Histórico de temperatura em graus Celsius com limites inferior, superior e média"><text x="0" y="11" class="monitor-axis">°C</text><line x1="38" y1="20" x2="350" y2="20"/><line x1="38" y1="52.5" x2="350" y2="52.5"/><line x1="38" y1="85" x2="350" y2="85"/><line x1="38" y1="117.5" x2="350" y2="117.5"/><line x1="38" y1="150" x2="350" y2="150"/><text id="monitor-y0" class="monitor-axis" x="31" y="24" text-anchor="end">—</text><text id="monitor-y1" class="monitor-axis" x="31" y="56.5" text-anchor="end">—</text><text id="monitor-y2" class="monitor-axis" x="31" y="89" text-anchor="end">—</text><text id="monitor-y3" class="monitor-axis" x="31" y="121.5" text-anchor="end">—</text><text id="monitor-y4" class="monitor-axis" x="31" y="154" text-anchor="end">—</text><line id="monitor-temp-mean" x1="38" y1="85" x2="350" y2="85" visibility="hidden"/><path id="monitor-temp-path" d=""/><text class="monitor-axis" x="38" y="177">−5 min</text><text class="monitor-axis" x="194" y="177" text-anchor="middle">−2:30</text><text class="monitor-axis" x="350" y="177" text-anchor="end">Agora</text></svg><div class="monitor-foot"><span id="monitor-temp-range">Escala: —</span><span id="monitor-sample-count">0 amostras</span></div><p id="monitor-history-state" class="monitor-note">Carregando histórico do ESP…</p><p class="monitor-note">Escala automática · linha tracejada = média. Estes valores não são limites de proteção.</p></section>
  <section class="monitor-card" style="margin-top:12px"><div class="monitor-heading" style="margin-top:0"><h2>RAW do LDR · últimos 2 s</h2><button id="monitor-raw-refresh" class="secondary" type="button" style="font-size:12px;padding:9px">Atualizar captura</button></div><svg class="monitor-plot" viewBox="0 0 360 190" preserveAspectRatio="none" role="img" aria-label="Captura congelada de dois segundos do RAW do LDR e limiar de CLIP"><line x1="38" y1="20" x2="350" y2="20"/><line x1="38" y1="52.5" x2="350" y2="52.5"/><line x1="38" y1="85" x2="350" y2="85"/><line x1="38" y1="117.5" x2="350" y2="117.5"/><line x1="38" y1="150" x2="350" y2="150"/><text id="monitor-raw-y0" class="monitor-axis" x="31" y="24" text-anchor="end">4095</text><text id="monitor-raw-y1" class="monitor-axis" x="31" y="56.5" text-anchor="end">3071</text><text id="monitor-raw-y2" class="monitor-axis" x="31" y="89" text-anchor="end">2048</text><text id="monitor-raw-y3" class="monitor-axis" x="31" y="121.5" text-anchor="end">1024</text><text class="monitor-axis" x="31" y="154" text-anchor="end">0</text><rect id="monitor-raw-zone" x="38" y="150" width="312" height="0" fill="#fb718522"/><line id="monitor-raw-limit-line" x1="38" y1="135" x2="350" y2="135"/><path id="monitor-raw-path" d=""/><text class="monitor-axis" x="38" y="177">−2 s</text><text class="monitor-axis" x="194" y="177" text-anchor="middle">−1 s</text><text class="monitor-axis" x="350" y="177" text-anchor="end">Captura</text></svg><p id="monitor-raw-state" class="mini" role="status">Clique em Atualizar captura para buscar os últimos 2 segundos do ESP.</p><div class="monitor-foot"><span id="monitor-raw-range">RAW · escala 0–4095</span><span id="monitor-raw-extremes">Mín: — · Máx: —</span></div><h2 style="margin-top:18px">Detecção relativa de CLIP</h2><p class="monitor-note">Referência: média móvel de 60 s. CLIP curto exige descida e subida rápidas (até 60 ms), com pelo menos 2 amostras abaixo de 80% da referência. Mais de 30 amostras consecutivas baixas confirma CLIP sustentado sem aguardar a subida. Recuperação em 90% da referência. O RGB pisca vermelho durante a indicação.</p><p id="monitor-cal-state" class="mini" role="status">Formando referência de 60 segundos…</p></section>
  <section class="monitor-card" style="margin-top:12px"><div class="monitor-heading" style="margin-top:0"><h2>Eventos</h2><span id="monitor-clip-count" class="mini">CLIP: —</span></div><div id="monitor-events" class="monitor-events">Carregando eventos do ESP…</div></section>
@@ -218,7 +267,7 @@ $('source-pulse').onclick=async()=>{
  try{
   const result=await api('/api/source/pulse',{});
   if(!result.accepted)throw Error('Sem confirmação');
-  $('source-result').textContent=result.already_target?'Modo Bluetooth/HID já confirmado pelo USB.':'Pulso enviado. Aguardando a mudança do USB da BLDSP.';
+  $('source-result').textContent='Troca solicitada. Se já estava em Bluetooth, aguarda modo USB e volta ao Bluetooth.';
  }catch(e){$('source-result').textContent='Sem confirmação da troca. Confira a fonte antes de tentar novamente.';}
  finally{setTimeout(()=>{sourceBusy=false;controls();},1500);}
 };
@@ -270,7 +319,7 @@ $('preset-reset').onclick=()=>{if(!confirm('Resetar o preset '+presetSlot+' para
 function queueOutput(key,words){
  const o=outputs[key];o.invalid=false;o.rev=++revision;o.dirty=true;uiFailure=null;
  pending.set(key,{words:words.slice(),rev:o.rev});renderSync();
- if(!sendTimer&&!sending)sendTimer=setTimeout(()=>{sendTimer=null;flushOutputs();},180);
+ if(!sendTimer&&!sending)sendTimer=setTimeout(()=>{sendTimer=null;flushOutputs();},40);
 }
 function scheduleEdit(){
  const key=active;
@@ -335,7 +384,7 @@ function drawRawCapture(){
  const y=150-130*Math.max(0,Math.min(rawGraphMax,limit))/rawGraphMax;
  $('monitor-raw-limit-line').setAttribute('y1',y);$('monitor-raw-limit-line').setAttribute('y2',y);$('monitor-raw-zone').setAttribute('y',y);$('monitor-raw-zone').setAttribute('height',150-y);
  $('monitor-raw-limit-line').setAttribute('visibility',limit===null?'hidden':'visible');$('monitor-raw-zone').setAttribute('visibility',limit===null?'hidden':'visible');
- $('monitor-raw-range').textContent='RAW 0–'+rawGraphMax+(limit===null?' · formando média de 60 s':' · 80% da média: '+Math.round(limit));
+ $('monitor-raw-range').textContent='RAW 0–'+rawGraphMax+(limit===null?' · formando referência':' · limiar RAW: '+Math.round(limit));
  if(!rawCapture)return;
  let d='',connected=false;const values=[];
  for(const p of rawCapture.samples){if(!Number.isFinite(p.raw)){connected=false;continue;}values.push(p.raw);const x=38+312*(p.at_ms-(rawCapture.uptime_ms-2000))/2000,pointY=150-130*p.raw/rawGraphMax;d+=(connected?' L':' M')+x.toFixed(1)+' '+pointY.toFixed(1);connected=true;}
@@ -375,44 +424,264 @@ function renderMonitor(data){
  const electrical=s=>Number.isFinite(s.millivolts)?s.millivolts.toFixed(0)+' mV':Number.isFinite(s.raw)?'ADC '+s.raw:'sem amostra válida';
  $('monitor-temp-electric').textContent='GPIO18 · '+electrical(t)+(Number.isFinite(t.resistance_ohm)?' · '+(t.resistance_ohm/1000).toFixed(2)+' kΩ':'');
  const clipKnown=c.status==='ok'&&typeof c.active==='boolean';
- $('monitor-clip').textContent=clipKnown?(c.active?(c.status==='provisional'?'Possível CLIP':'CLIP detectado'):'Sem CLIP'):'Sem leitura';
- monitorBadge('monitor-clip-state',clipKnown?(c.active?'Retenção de 2 s':c.status==='provisional'?'Limiar provisório':'LED monitorado'):(c.status==='warming_up'?'Média inicial · 60 s':'Sensor indisponível'),clipKnown?(c.active?'danger':'ok'):'warn');
+ $('monitor-clip').textContent=c.status==='rail_high'?'Verificar LDR':clipKnown?(c.active?(c.status==='provisional'?'Possível CLIP':'CLIP detectado'):'Sem CLIP'):'Sem leitura';
+ monitorBadge('monitor-clip-state',clipKnown?(c.active?'Retenção de 2 s':c.status==='provisional'?'Limiar provisório':'LED monitorado'):(c.status==='rail_high'?'Escuro / possível desconexão':c.status==='warming_up'?'Formando média':'Sensor indisponível'),clipKnown?(c.active?'danger':'ok'):'warn');
  $('monitor-clip-electric').textContent='GPIO17 · '+electrical(c)+(Number.isFinite(c.raw)?' · RAW '+c.raw:'');
  drawRawCapture();
  $('monitor-clip-count').textContent='CLIP: '+(Number.isFinite(c.count)?c.count:'—');
- $('monitor-cal-state').textContent=c.status==='warming_up'?'Aguardando um minuto de leituras válidas.':Number.isFinite(c.baseline_raw)?'Borda ≤60 ms · média 60 s: '+c.baseline_raw.toFixed(0)+' · dispara < '+c.threshold.toFixed(0)+' · libera ≥ '+c.release_raw.toFixed(0):'Sem referência válida do LDR.';
+ $('monitor-cal-state').textContent=c.status==='rail_high'?'Leitura colada no rail superior. Pode ser escuro ou sensor/cabo desconectado. Pulsos válidos ainda contam como CLIP.':c.status==='warming_up'?'Formando média por '+(c.window_ms||60000)/1000+' s.':Number.isFinite(c.baseline_raw)?'Borda ≤'+c.edge_window_ms+' ms · média '+c.window_ms/1000+' s: '+c.baseline_raw.toFixed(0)+' · dispara < '+c.threshold.toFixed(0)+' · libera ≥ '+c.release_raw.toFixed(0):'Sem referência válida do LDR.';
  monitorBadge('monitor-connection','ESP conectado','ok');
  const alert=$('monitor-alert');alert.setAttribute('data-tone',clipKnown&&c.active?'danger':'warn');
- alert.textContent=clipKnown&&c.active?'Clipping indicado pelo amplificador. Monitoramento não altera o ganho.':!validTemp?'Temperatura sem leitura válida. Confira o divisor resistivo e a ligação do NTC.':!clipKnown?'Aguardando referência de 60 segundos do LDR para acompanhar o LED CLIP.':'Sensores acompanhados. Temperatura estimada; proteção automática ainda desativada.';
+ alert.textContent=clipKnown&&c.active?'Clipping indicado pelo amplificador. Confira a proteção de pré-ganho abaixo.':!validTemp?'Temperatura sem leitura válida. Confira o divisor resistivo e a ligação do NTC.':!clipKnown?'Aguardando referência do LDR para acompanhar o LED CLIP.':(data.automatic_protection?'Sensores acompanhados. Proteção de pré-ganho do subwoofer habilitada.':'Sensores acompanhados. Proteção automática desativada.');
 }
 function monitorUnavailable(){monitorBadge('monitor-connection','Sem conexão','warn');$('monitor-temperature').textContent='—';$('monitor-coil').textContent='—';monitorBadge('monitor-coil-state','Sem conexão');$('monitor-clip').textContent='Sem leitura';monitorBadge('monitor-temp-state','Sem leitura');monitorBadge('monitor-clip-state','Sem leitura');$('monitor-alert').textContent='Não foi possível atualizar os sensores. As leituras anteriores não representam o estado atual.';$('monitor-history-state').textContent='Sem conexão; histórico exibido até a última atualização.';}
 async function pollMonitor(){
- if(currentView!=='monitor'||monitorFetching)return;monitorFetching=true;const generation=monitorGeneration;
+ if(monitorFetching)return;monitorFetching=true;
+ if(monitorTimer){clearTimeout(monitorTimer);monitorTimer=null;}
+ const generation=monitorGeneration;
  try{
-  const data=await api('/api/telemetry');if(currentView==='monitor'&&generation===monitorGeneration)renderMonitor(data);
+  await syncClock();const data=await api('/api/telemetry');renderGlobalClip(data);
+  if(currentView==='monitor'&&generation===monitorGeneration)renderMonitor(data);
   if(currentView==='monitor'&&generation===monitorGeneration&&Date.now()-lastHistoryFetch>=5000){
    try{const history=await api('/api/telemetry/history');if(currentView==='monitor'&&generation===monitorGeneration){renderHistory(history);lastHistoryFetch=Date.now();}}
    catch(e){if(currentView==='monitor'&&generation===monitorGeneration)$('monitor-history-state').textContent='Não foi possível atualizar o histórico do ESP.';}
   }
- }
- catch(e){if(currentView==='monitor'&&generation===monitorGeneration)monitorUnavailable();}
- finally{monitorFetching=false;if(currentView==='monitor')monitorTimer=setTimeout(pollMonitor,1000);}
+ }catch(e){renderGlobalClip(null);$('panel-live-state').textContent='Sem conexão com o ESP. Leituras anteriores não representam o estado atual.';$('panel-link').textContent='· sem conexão com o ESP';for(let i=0;i<5;i++)$('pot-live'+i).setAttribute('data-stale',true);if(currentView==='monitor'&&generation===monitorGeneration)monitorUnavailable();}
+ finally{monitorFetching=false;monitorTimer=setTimeout(pollMonitor,currentView==='monitor'?1000:200);}
 }
+let protectionEdited=false,protectionLoaded=false;
+const protectionFields=['protect-events','protect-window','protect-step','protect-interval','protect-max','protect-quiet','protect-recover-step','protect-recover-interval','protect-enabled','protect-recovery'];
+for(const id of protectionFields)$(id).oninput=()=>{protectionEdited=true;$('protect-message').textContent='Alterações ainda não salvas.';};
+function renderProtection(p){
+ if(!p)return;
+ const c=p.config||{},reduction=Number.isFinite(p.attenuation_db)?p.attenuation_db:0;
+ $('protection-summary').textContent='· '+(c.enabled?'habilitada':'desativada')+(reduction?' · −'+reduction.toFixed(1)+' dB':'');
+ const states={pending:'Aplicação pendente no DSP',waiting_sensor:'Aguardando referência do sensor',sensor_warning:'LDR no limite superior; recuperação suspensa',recovering:'Restaurando lentamente',unavailable:'Proteção indisponível'};
+ let line=reduction?'Subwoofer · redução aplicada: −'+reduction.toFixed(2).replace('.',',')+' dB':'Subwoofer · sem redução automática aplicada';
+ const base=outputs.sub.draft? signed(outputs.sub.draft[1])/256:null;
+ if(reduction&&base!==null)line+=' · pré-ganho efetivo: '+Math.max(-128,base-reduction).toFixed(2).replace('.',',')+' dB';
+ if(states[p.state])line+=' · '+states[p.state];$('protection-live').textContent=line;
+ if(!protectionLoaded&&!protectionEdited&&typeof c.enabled==='boolean'){
+  $('protect-enabled').checked=c.enabled;$('protect-recovery').checked=!!c.recovery_enabled;
+  const values={'protect-events':c.event_count,'protect-window':c.window_ms/1000,'protect-step':c.step_db,'protect-interval':c.interval_ms/1000,'protect-max':c.max_atten_db,'protect-quiet':c.quiet_ms/1000,'protect-recover-step':c.recovery_step_db,'protect-recover-interval':c.recovery_interval_ms/1000};
+  for(const [id,value] of Object.entries(values))if(Number.isFinite(value))$(id).value=value;protectionLoaded=true;
+ }
+}
+const stripPaletteColors=[["ff0000", "ffff00", "00ff00", "00ffff", "0000ff", "ff00ff"], ["00122b", "003c80", "007eaa", "00dbc4", "65f6e4", "006c8f"], ["210000", "a80000", "ff2c00", "ff8600", "ffe140", "ffedb0"], ["081c38", "005e53", "00d993", "84f295", "7857dc", "20309a"], ["35126c", "a11b82", "f84f68", "ff9345", "ffd18a", "7042a7"], ["160b4f", "4821b7", "e82bc2", "ff4786", "1be4ee", "0868d4"], ["052315", "126839", "48a637", "c5cf48", "48966b", "0a4b41"], ["06214b", "1768aa", "61c8f3", "d1faff", "74dfd3", "2478b2"], ["672d91", "d876dd", "ffadc9", "ffe4ee", "a4def9", "8b8de0"], ["422000", "986100", "e5ac2d", "ffdb77", "fff1b3", "bf7915"], ["160000", "500207", "b30e17", "fa3229", "ff7636", "a32b10"]];
+function previewStripPalette(){const id=Number($('strip-palette').value)||0;$('strip-palette-preview').setAttribute('style','height:24px;border-radius:8px;margin:10px 0;background:linear-gradient(90deg,'+stripPaletteColors[id].map(c=>'#'+c).concat('#'+stripPaletteColors[id][0]).join(',')+')');}
+let stripLoaded=false,stripEdited=false;
+for(const id of ['strip-enabled','strip-count','strip-brightness','strip-mode','strip-palette'])$(id).oninput=()=>{if(id==='strip-palette')previewStripPalette();stripEdited=true;$('strip-message').textContent='Alterações ainda não salvas.';};
+function renderStrip(s){
+ if(!s||stripEdited||stripLoaded)return;
+ $('strip-enabled').checked=!!s.enabled;$('strip-count').value=s.count;$('strip-brightness').value=s.brightness;$('strip-mode').value=String(s.mode);$('strip-palette').value=String(s.palette??0);previewStripPalette();stripLoaded=true;
+}
+$('strip-save').onclick=async()=>{
+ const button=$('strip-save');button.disabled=true;$('strip-message').textContent='Salvando…';
+ try{
+  const count=Number($('strip-count').value),brightness=Number($('strip-brightness').value),mode=Number($('strip-mode').value),palette=Number($('strip-palette').value);
+  if(!String($('strip-count').value).trim()||!String($('strip-brightness').value).trim()||![count,brightness,mode,palette].every(Number.isInteger)||count<1||count>150||brightness<0||brightness>100||mode<0||mode>2||palette<0||palette>=stripPaletteColors.length)throw Error('Confira segmentos (1–150), brilho (0–100%) e animação.');
+  const data=await api('/api/strip',{enabled:$('strip-enabled').checked,count,brightness,mode,palette});stripLoaded=false;stripEdited=false;renderStrip(data.strip);$('strip-message').textContent='Salvo no ESP principal. O C3 aplica assim que receber o estado.';
+ }catch(e){$('strip-message').textContent=e.message;}finally{button.disabled=false;}
+};
+
+let lightLoaded=false,lightEdited=false,clockAt=0,clockSyncing=false,locationAttempted=false;
+function parseLightSteps(text){
+ const lines=text.trim().split(/\r?\n/).filter(s=>s.trim());if(lines.length<2||lines.length>12)throw Error('Use de 2 a 12 linhas.');
+ const seen=new Set();return lines.map(line=>{
+  const cells=line.split(',').map(s=>s.trim());if(cells.length!==2||!/^\d{1,3}$/.test(cells[1])||Number(cells[1])>100)throw Error('Formato: horário, percentual de 0 a 100.');
+  let anchor=0,minute;const fixed=/^(\d{2}):(\d{2})$/.exec(cells[0]),solar=/^(sunrise|sunset)([+-]\d+)?$/.exec(cells[0]);
+  if(fixed&&Number(fixed[1])<24&&Number(fixed[2])<60)minute=Number(fixed[1])*60+Number(fixed[2]);
+  else if(solar){anchor=solar[1]==='sunrise'?1:2;minute=Number(solar[2]||0);if(Math.abs(minute)>720)throw Error('Deslocamento solar máximo: 720 minutos.');}
+  else throw Error('Use HH:MM, sunrise ou sunset com deslocamento em minutos.');
+  const key=anchor+':'+minute;if(seen.has(key))throw Error('Horário repetido.');seen.add(key);return {anchor,minute,brightness:Number(cells[1])};
+ });
+}
+function formatLightStep(p){const m=p.minute;return (p.anchor?(p.anchor===1?'sunrise':'sunset')+(m?(m>0?'+':'')+m:''):String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'))+','+p.brightness;}
+for(const id of ['light-enabled','light-smooth','light-lat','light-lon','light-steps'])$(id).oninput=()=>{lightEdited=true;$('light-message').textContent='Alterações ainda não salvas.';};
+function renderLighting(s){
+ if(!s.clock_valid)clockAt=0;
+ if(!lightLoaded&&!lightEdited&&Array.isArray(s.steps)){
+  $('light-enabled').checked=s.enabled;$('light-smooth').checked=s.smooth;$('light-lat').value=s.latitude;$('light-lon').value=s.longitude;$('light-steps').value=s.steps.map(formatLightStep).join('\n');lightLoaded=true;phoneLocation();
+ }
+ const hhmm=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(Math.floor(m)%60).padStart(2,'0');
+ const clock=s.clock_valid?new Date((s.unix_seconds+s.utc_offset_minutes*60)*1000).toISOString().slice(11,19):'sem hora';
+ $('light-live').textContent='ESP: '+clock+(s.solar_valid?' · nascer '+hhmm(s.sunrise_minute)+' · pôr '+hhmm(s.sunset_minute):'')+' · '+(s.applied?'Automático: '+s.brightness+'%':s.enabled?'Aguardando hora/programa solar válido · brilho manual':'Brilho manual');
+}
+async function syncClock(force=false){
+ if(demo||clockSyncing||(!force&&Date.now()-clockAt<60000))return;clockSyncing=true;
+ try{await api('/api/clock',{unix_seconds:Math.floor(Date.now()/1000),utc_offset_minutes:-new Date().getTimezoneOffset()});clockAt=Date.now();}catch(e){clockAt=Date.now()-55000;/* Retry in five seconds; never invent a clock. */}finally{clockSyncing=false;}
+}
+window.addEventListener('focus',()=>syncClock(true));window.addEventListener('pageshow',()=>syncClock(true));
+if(document.addEventListener)document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncClock(true);});
+function phoneLocation(){
+ if(locationAttempted)return;locationAttempted=true;
+ if(typeof navigator==='undefined'||!navigator.geolocation||typeof isSecureContext==='undefined'||!isSecureContext)return;
+ navigator.geolocation.getCurrentPosition(p=>{if(lightEdited)return;$('light-lat').value=p.coords.latitude.toFixed(4);$('light-lon').value=p.coords.longitude.toFixed(4);lightEdited=true;$('light-location').textContent='Localização do telefone preenchida. Salve para usar.';},()=>{$('light-location').textContent='GPS indisponível. As coordenadas podem ser preenchidas manualmente.';},{timeout:10000,maximumAge:3600000});
+}
+$('light-save').onclick=async()=>{
+ const button=$('light-save');button.disabled=true;
+ try{const latitude=Number($('light-lat').value),longitude=Number($('light-lon').value);if(!$('light-lat').value.toString().trim()||!$('light-lon').value.toString().trim()||!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>=90||Math.abs(longitude)>180)throw Error('Confira latitude e longitude.');
+ const steps=parseLightSteps($('light-steps').value);await syncClock(true);const data=await api('/api/lighting',{enabled:$('light-enabled').checked,smooth:$('light-smooth').checked,latitude,longitude,steps});lightEdited=false;lightLoaded=false;renderLighting(data.lighting);$('light-message').textContent='Programa e localização salvos no ESP.';
+ }catch(e){$('light-message').textContent=e.message;}finally{button.disabled=false;}
+};
+let wifiEdited=false,wifiSaving=false;
+$('wifi-power').oninput=()=>{wifiEdited=true;$('wifi-message').textContent='Alteração ainda não aplicada.';};
+function renderWifi(w){
+ if(!w||!w.available)return;
+ $('wifi-current').textContent='Limite ativo no principal: '+Number(w.power_dbm).toLocaleString('pt-BR')+' dBm';
+ if(!wifiEdited&&!wifiSaving)$('wifi-power').value=String(w.power_qdbm);
+}
+async function applyWifiPower(value){
+ if(wifiSaving)return;
+ const allowed=[8,20,28,34,44,52,56,60,66,72,80];
+ if(!allowed.includes(value)){$('wifi-message').textContent='Selecione uma potência válida.';return;}
+ wifiSaving=true;$('wifi-save').disabled=true;$('wifi-low').disabled=true;$('wifi-message').textContent='Aplicando…';
+ try{const data=await api('/api/wifi',{power_qdbm:value});if(!data.wifi?.available)throw Error('Não foi possível confirmar a potência.');wifiEdited=false;$('wifi-power').value=String(data.wifi.power_qdbm);renderWifi(data.wifi);$('wifi-message').textContent='Aplicado e salvo no ESP: '+data.wifi.power_dbm+' dBm.';}
+ catch(e){$('wifi-message').textContent=e.message;}finally{wifiSaving=false;$('wifi-save').disabled=false;$('wifi-low').disabled=false;}
+}
+$('wifi-save').onclick=()=>applyWifiPower(Number($('wifi-power').value));
+$('wifi-low').onclick=()=>applyWifiPower(8);
+const knobIcon='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="13" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 13L16 8" stroke="currentColor" stroke-width="2"/></svg>';
+let panelLoaded=false,panelEdited=false,panelRevision=null;
+const potNames=['Volume sub','Grave','Médio','Agudos','Brilho'];
+for(let i=0;i<5;i++){
+ const row=document.createElement('div');row.className='monitor-card';
+ let opts='<option value="0:0">Sem função</option><option value="147:1">Volume do sub · pré-ganho</option>';
+ for(const [module,name] of [[145,'Efeito 2'],[147,'Efeito 4 · sub']])for(let band=0;band<10;band++)opts+=`<option value="${module}:${7+5*band}">${name} · Filtro ${band+1} · ganho</option>`;
+ row.innerHTML=`<label><span style="display:flex;gap:8px;align-items:center">${knobIcon} P${i+1} · ${potNames[i]}</span><select id="pot-target${i}">${opts}</select></label><div class="protection-grid" style="margin-top:8px"><label>Mínimo · dB<input id="pot-min${i}" type="number" min="-60" max="11" step="0.25" value="${i?-12:-60}"></label><label>Máximo · dB<input id="pot-max${i}" type="number" min="-59" max="12" step="0.25" value="${i?12:0}"></label></div><div id="pot-live${i}" class="pot-live" data-stale="true"><div class="pot-live-head"><span class="mini">Posição do controle</span><strong id="pot-percent${i}" class="pot-percent">— %</strong></div><progress id="pot-meter${i}" max="65535" value="0" aria-label="Posição de P${i+1}"></progress><p id="pot-adc${i}" class="mini">ADC · aguardando diagnóstico do C3</p><p id="pot-reading${i}" class="mini">Posição de controle · — / 65535</p><div class="pot-values"><span>Pot: <strong id="pot-request${i}">— dB</strong></span><span>DSP: <strong id="pot-dsp${i}">— dB</strong></span></div><p id="pot-pickup${i}" class="pot-pickup"></p></div><p id="pot-state${i}" class="mini">Aguardando painel</p>`;
+ $('panel-bindings').append(row);
+ for(const id of ['pot-target','pot-min','pot-max'])$(id+i).oninput=()=>{panelEdited=true;$('panel-message').textContent='Mapeamento ainda não salvo.';};
+ $('pot-target'+i).onchange=()=>{const selector=Number(String($('pot-target'+i).value).split(':')[1]);$('pot-min'+i).value=selector===1?-60:-12;$('pot-max'+i).value=selector===1?0:12;panelEdited=true;$('panel-message').textContent='Mapeamento ainda não salvo.';};
+}
+$('panel-enabled').oninput=()=>{panelEdited=true;};
+function renderPanel(p){
+ if(!p)return;
+ $('panel-link').textContent=p.online?'· C3 conectado':'· C3 desconectado';
+ $('panel-live-state').textContent=p.online?'Ao vivo · pacote '+(p.sequence??'—')+' · recebido há '+(Number.isFinite(p.age_ms)?Math.round(p.age_ms)+' ms':'—')+(!p.enabled?' · comandos desativados; leituras disponíveis':''):'Sem dados recentes. As últimas leituras ficam esmaecidas.';
+ if(!panelLoaded&&!panelEdited&&p.bindings?.length===5){
+  $('panel-enabled').checked=p.enabled;
+  p.bindings.forEach((b,i)=>{$('pot-target'+i).value=b.module+':'+b.selector;$('pot-min'+i).value=b.min_db;$('pot-max'+i).value=b.max_db;});panelLoaded=true;
+ }
+ for(let i=0;i<5;i++){
+  const b=p.bindings?.[i];if(!b)continue;
+  const valid=p.online&&b.valid&&Number.isFinite(b.position),position=Math.max(0,Math.min(65535,Number(b.position)||0));
+  $('pot-live'+i).setAttribute('data-stale',!valid);
+  $('pot-percent'+i).textContent=Number.isFinite(b.position)?(position*100/65535).toFixed(1).replace('.',',')+' %':'— %';
+  $('pot-meter'+i).value=position;
+  $('pot-adc'+i).textContent=Number.isFinite(b.adc_raw)&&Number.isFinite(b.adc_mv)?'ADC '+b.adc_raw+' / 4095 · '+b.adc_mv+' mV'+(b.adc_calibrated?' · calibrado':' · conversão aproximada')+(b.adc_raw>=4090?' · ADC saturado':b.adc_mv>=2480?' · limite da escala de tensão':''):'ADC · sem diagnóstico recente';
+  $('pot-reading'+i).textContent='Posição de controle · '+(Number.isFinite(b.position)?Math.round(position):'—')+' / 65535';
+  const db=v=>Number.isFinite(v)?v.toFixed(2).replace('.',',')+' dB':'— dB';
+  $('pot-request'+i).textContent=db(b.target_gain_db);$('pot-dsp'+i).textContent=db(b.gain_db);
+  let state=!p.online?'Sem enlace':!b.valid?'ADC indisponível':!p.enabled?'Painel desativado · leitura ativa':!b.module?'Sem função':!Number.isFinite(b.gain_db)?'Aguardando leitura do DSP':b.active===false?'EQ/filtro inativo ou sem ganho':b.picked?'Controlando':'Aguardando alcançar o ganho do DSP';
+  $('pot-state'+i).textContent=state;
+  let hint='';
+  if(valid&&p.enabled&&b.module&&b.active!==false&&!b.picked&&Number.isFinite(b.gain_db)&&Number.isFinite(b.target_gain_db)){
+   if(b.gain_db<b.min_db||b.gain_db>b.max_db)hint='O ganho do DSP está fora da faixa deste potenciômetro. Ajuste a faixa ou o ganho pelo celular.';
+   else hint='Gire para '+(b.target_gain_db<b.gain_db?'aumentar':'diminuir')+' até alcançar '+db(b.gain_db)+' e assumir o controle.';
+  }
+  $('pot-pickup'+i).textContent=hint;
+ }
+ if(p.error)$('panel-link').textContent+=' · ajuste pendente';
+ if(p.revision!==panelRevision){
+  for(const key of ['sub','stereo']){
+   const raw=p[key],o=outputs[key];
+   if(!initialized||!Array.isArray(raw)||raw.length!==53||raw.some(n=>!Number.isInteger(n)||n<0||n>65535)||o.dirty||pending.has(key)||sending)continue;
+   const w=normalizeFrequencies(raw);if(!validPresetWords(w))continue;
+   o.words=w.slice();o.draft=w.slice();
+   if(active===key){original=w.slice();populate(w);}
+  }
+  if(!sending&&pending.size===0)panelRevision=p.revision;
+ }
+}
+$('panel-save').onclick=async()=>{
+ const button=$('panel-save');button.disabled=true;$('panel-message').textContent='Salvando…';
+ try{
+  const bindings=[];const used=new Set();
+  for(let i=0;i<5;i++){
+   const [module,selector]=String($('pot-target'+i).value).split(':').map(Number),min_db=Number($('pot-min'+i).value),max_db=Number($('pot-max'+i).value);
+   if(!module){bindings.push({module:0,selector:0,min_db:-12,max_db:12});continue;}
+   if(![module,selector,min_db,max_db].every(Number.isFinite)||max_db-min_db<1||min_db<(selector===1?-60:-24)||max_db>(selector===1?0:12))throw Error('Confira a faixa de ganho de P'+(i+1)+'.');
+   const key=module+':'+selector;if(module&&used.has(key))throw Error('Cada função pode ter apenas um potenciômetro.');used.add(key);bindings.push({module,selector,min_db,max_db});
+  }
+  const data=await api('/api/panel',{enabled:$('panel-enabled').checked,bindings});panelLoaded=false;panelEdited=false;renderPanel(data.panel);$('panel-message').textContent='Potenciômetros salvos no ESP. Alcance o valor atual para assumir cada controle.';
+ }catch(e){$('panel-message').textContent=e.message;}finally{button.disabled=false;}
+};
+const detectorKeys=['drop_percent','release_drop_percent','edge_window_ms','min_low_samples','sustained_samples','window_ms','hard_min_samples'];
+let detectorLoaded=false,detectorEdited=false;
+for(const k of detectorKeys)$('detect-'+k).oninput=()=>{detectorEdited=true;$('detect-message').textContent='Alterações ainda não salvas.';};
+$('detect-reset').onclick=()=>{const defaults=[20,10,60,2,31,60000,6];detectorKeys.forEach((k,i)=>$('detect-'+k).value=defaults[i]);detectorEdited=true;$('detect-message').textContent='Valores padrão preparados; salve para aplicar.';};
+$('detect-save').onclick=async()=>{
+ const button=$('detect-save');button.disabled=true;
+ try{const config={};for(const k of detectorKeys){const el=$('detect-'+k),v=Number(el.value);if(!String(el.value).trim()||!Number.isInteger(v)||v<Number(el.min)||v>Number(el.max))throw Error('Confira os limites dos parâmetros.');config[k]=v;}
+ if(config.release_drop_percent>=config.drop_percent||config.sustained_samples<config.min_low_samples)throw Error('Recuperação deve ser menor que queda; sustentado deve ser >= mínimo.');
+ const data=await api('/api/telemetry/ldr',config);detectorEdited=false;detectorLoaded=false;renderGlobalClip(data);$('detect-message').textContent='Salvo na NVS do ESP. Formando nova referência por '+config.window_ms/1000+' s.';
+ }catch(e){$('detect-message').textContent=e.message;}finally{button.disabled=false;}
+};
+function renderGlobalClip(data){
+ if(data&&data.lighting)renderLighting(data.lighting);
+ if(data&&data.strip)renderStrip(data.strip);
+ if(data&&data.wifi)renderWifi(data.wifi);
+ if(data&&data.panel)renderPanel(data.panel);
+ const dc=data&&data.clip;if(dc&&!detectorLoaded&&!detectorEdited){for(const k of detectorKeys)if(Number.isFinite(dc[k]))$('detect-'+k).value=dc[k];detectorLoaded=true;}
+
+ const c=data&&data.clip,activeClip=!!c&&(c.active===true||c.flash===true)&&c.status!=='unavailable';
+ const severe=!!c&&c.flash===true&&c.status!=='unavailable';document.body.classList.toggle('clip-flashing',severe);
+ const temp=data&&data.temperature,coil=data&&data.coil;
+ $('main-coil').textContent=coil&&coil.status==='estimated'&&Number.isFinite(coil.celsius)?coil.celsius.toFixed(1).replace('.',',')+' °C':'— °C';
+ const coilValid=coil&&coil.status==='estimated'&&Number.isFinite(coil.celsius);$('main-coil').classList.toggle('hot',!!coilValid&&coil.celsius>70);$('main-coil').classList.toggle('critical',!!coilValid&&coil.celsius>130);
+ $('main-ntc').textContent=temp&&['estimated','ok'].includes(temp.status)&&Number.isFinite(temp.celsius)?temp.celsius.toFixed(1).replace('.',',')+' °C':'— °C';
+ let state='unknown',label='CLIP · sem conexão',detail='Sem leitura recente do amplificador.';
+ if(activeClip){state='clip';label='CLIP DETECTADO';detail=severe?'Clipping forte e recorrente por pelo menos 5 segundos.':'Pulso de clipping detectado.';}
+ else if(c&&c.status==='rail_high'){state='warning';label='Verificar sensor de CLIP';detail='LDR no rail superior: escuro ou possível desconexão. Pulsos válidos continuam sendo aceitos.';}
+ else if(c&&c.status==='ok'){state='ok';label='CLIP · monitorando';detail='Sem indicação recente de clipping.';}
+ else if(c&&c.status==='warming_up'){state='warning';label='CLIP · formando referência';detail='Formando a referência de '+(c.window_ms||60000)/1000+' segundos.';}
+ $('clip-banner').setAttribute('data-state',state);$('clip-label').textContent=label;$('clip-detail').textContent=detail;
+ if(data&&data.protection)renderProtection(data.protection);
+}
+function protectionConfig(){
+ const n=id=>{const raw=$(id).value,value=Number(raw);if(!String(raw).trim()||!Number.isFinite(value))throw Error('Preencha todos os parâmetros.');return value;};
+ const c={enabled:$('protect-enabled').checked,recovery_enabled:$('protect-recovery').checked,event_count:n('protect-events'),window_ms:Math.round(n('protect-window')*1000),step_db:n('protect-step'),interval_ms:Math.round(n('protect-interval')*1000),max_atten_db:n('protect-max'),quiet_ms:Math.round(n('protect-quiet')*1000),recovery_step_db:n('protect-recover-step'),recovery_interval_ms:Math.round(n('protect-recover-interval')*1000)};
+ if(!Number.isInteger(c.event_count)||c.event_count<2||c.event_count>20||c.window_ms<500||c.window_ms>10000||c.step_db<.1||c.step_db>3||c.interval_ms<250||c.interval_ms>5000||c.max_atten_db<.5||c.max_atten_db>24||c.max_atten_db<c.step_db||c.quiet_ms<2000||c.quiet_ms>60000||c.recovery_step_db<.1||c.recovery_step_db>1||c.recovery_interval_ms<500||c.recovery_interval_ms>10000)throw Error('Confira os limites dos parâmetros.');
+ return c;
+}
+$('protect-save').onclick=async()=>{
+ const button=$('protect-save');button.disabled=true;
+ try{const c=protectionConfig();const data=await api('/api/protection',{action:'configure',config:c});protectionEdited=false;protectionLoaded=false;renderProtection(data);$('protect-message').textContent=c.enabled?'Proteção habilitada e salva no ESP.':'Configuração salva. Proteção desativada; redução existente mantida.';}
+ catch(e){$('protect-message').textContent=e.message;}finally{button.disabled=false;}
+};
+$('protect-restore').onclick=async()=>{
+ const button=$('protect-restore');button.disabled=true;
+ try{renderProtection(await api('/api/protection',{action:'restore'}));$('protect-message').textContent='Restauração lenta solicitada. Aguarda silêncio de CLIP e referência válida.';}
+ catch(e){$('protect-message').textContent=e.message;}finally{button.disabled=false;}
+};
+for(const [id,mode] of [['preview-clip','clip'],['preview-hard','hard'],['preview-rail','rail'],['preview-clear','clear']])$(id).onclick=async()=>{try{renderGlobalClip(await api('/api/demo/clip',{mode}));}catch(e){$('clip-detail').textContent=e.message;}};
 function selectView(view){
  currentView=view;monitorGeneration++;if(monitorTimer){clearTimeout(monitorTimer);monitorTimer=null;}
- $('eq-view').hidden=view!=='eq';$('monitor-view').hidden=view!=='monitor';$('eq-switch').hidden=view!=='eq';$('page-title').textContent=view==='eq'?'Equalizador':'Monitoramento';
- for(const key of ['eq','monitor'])$('view-'+key).setAttribute('aria-selected',String(key===view));
- if(view==='monitor'){lastHistoryFetch=0;pollMonitor();}else draw();
+ for(const key of ['eq','monitor','panel'])$(key+'-view').hidden=view!==key;
+ $('eq-switch').hidden=view!=='eq';$('page-title').textContent={eq:'Equalizador',monitor:'Monitoramento',panel:'Painel'}[view];
+ for(const key of ['eq','monitor','panel'])$('view-'+key).setAttribute('aria-selected',String(key===view));
+ if(view==='monitor')lastHistoryFetch=0;if(view==='eq')draw();pollMonitor();
 }
-$('view-eq').onclick=()=>selectView('eq');$('view-monitor').onclick=()=>selectView('monitor');
+for(const key of ['eq','monitor','panel'])$('view-'+key).onclick=()=>selectView(key);
 window.addEventListener('click',e=>{if(!e.target.closest('.filter-type'))closeTypeMenus();});
 window.addEventListener('resize',draw);
 controls();draw();
-if(typeof location!=='undefined'&&location.hash==='#monitor')selectView('monitor');
+if(typeof location!=='undefined'&&['#monitor','#panel'].includes(location.hash))selectView(location.hash.slice(1));
+function initializeEQ(preset,panel,preview){
+ for(const key of ['sub','stereo']){
+  const live=panel?.[key];let w=Array.isArray(live)&&live.length===53?normalizeFrequencies(live):null;
+  if(!w||!validPresetWords(w))w=normalizeFrequencies(preset[key]);
+  if(!validPresetWords(w))throw Error('Preset 1 inválido.');outputs[key].words=w.slice();outputs[key].draft=w.slice();
+ }
+ populate(outputs[active].draft);initialized=true;presetSlot=1;
+ // The S3 applies its boot preset before the physical panel. Opening a browser
+ // must never overwrite that state with another preset write.
+ if(preview)queueBoth();status('Configuração atual carregada.');
+}
 run(async()=>{
- const info=await api('/api/status');demo=!!info.demo;if(demo)seedDemoPreset();
+ const info=await api('/api/status');demo=!!info.demo;if(demo){seedDemoPreset();$('preview-controls').hidden=false;}
  const j=await api('/api/preset?slot=1');
- for(const key of ['sub','stereo']){const w=normalizeFrequencies(j[key]);if(!validPresetWords(w))throw Error('Preset 1 inválido.');outputs[key].words=w.slice();outputs[key].draft=w.slice();}
- populate(outputs[active].draft);initialized=true;presetSlot=1;queueBoth();status('Preset 1 carregado.');
+ const live=demo?null:await api('/api/panel').catch(()=>null);
+ initializeEQ(j,live?.panel,demo);pollMonitor();
 });
 </script></body></html>
