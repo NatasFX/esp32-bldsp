@@ -4,9 +4,9 @@ GPIO5 (ADC2 canal 0) do C3, leitura única a cada segundo, tarefa independente d
 
 ## Ligação
 
-VCC -> resistor 68 kΩ 1% -> GPIO5 -> resistor 10 kΩ 1% -> GND do C3. Capacitor de 100 nF entre GPIO5 e GND, perto do ESP. A referência GND deve ser comum à alimentação medida. O divisor não protege contra transientes automotivos: sua proteção deve ser dimensionada antes de uso definitivo no carro. Não aplicar VCC diretamente ao GPIO.
+VCC -> resistor 68 kΩ 1% -> GPIO5 -> dois resistores 10 kΩ 1% em paralelo (5 kΩ) -> GND do C3. Capacitor de 100 nF entre GPIO5 e GND, perto do ESP. A referência GND deve ser comum à alimentação medida. O divisor não protege contra transientes automotivos: sua proteção deve ser dimensionada antes de uso definitivo no carro. Não aplicar VCC diretamente ao GPIO.
 
-Fator nominal 7,8. Em 15 V, ADC recebe 1,923 V; em 16 V, 2,051 V. Faixa útil esperada do ADC: até cerca de 2,5 V, atenuação de 12 dB.
+Conversão atual provisória: Ventrada = 27,2 × VGPIO − 43,7472 (offset ancorado após instalar o segundo 10k). Ela considera o pull-up equivalente da placa e os dois resistores inferiores em paralelo. Estimativas em mV reportados pelo ADC: 10 V -> 1,976 V; 15 V -> 2,160 V; 16 V -> 2,197 V. Faixa útil esperada do ADC: até cerca de 2,5 V, atenuação de 12 dB.
 
 ## Limitação conhecida
 
@@ -19,3 +19,13 @@ Referência: https://docs.espressif.com/projects/esp-idf/en/release-v5.3/esp32c3
 ## Primeiro envio em 20/11/2026
 
 Testes nativos/Node e builds aprovados. OTA C3 confirmou novo boot/SHA/banco 0x200000; S3 normal restaurado. Cinco leituras retornaram ESP_OK e calibração disponível, duração 40 µs, RAW 4095 / 2938 mV constantes (saturação). Isso não valida a tensão: aguarda ligação do divisor e comparação com multímetro. Pots seguiram valid_mask=1f/picked_mask=1f.
+
+## Compensação fixa do pull-up da placa
+
+Divisor isolado conferido (~1 V em 7,96 V), mas GPIO5 alterava sua tensão. Medições com pull-down original de 10k: Vin=7,96 V / GPIO=2,469 V; Vin=10 V / GPIO=2,569 V (multímetro). Inclinação 0,1/2,04 e intercepto 2,0788039 V. Assumindo rede linear e 3V3 fixo, isso equivale a pull-up de cerca de 5,40k para ~3,37 V (equivalente ajustado, não medição física desses componentes). Os 6,11k medidos com a placa desligada incluem outros caminhos e não foram tratados como resistor isolado.
+
+Adicionar outro 10k para GND altera a carga: a nova inversão é Vin=(1/a+68000/10000)*VGPIO-b/a, resultando 27,2*VGPIO-42,4076. Firmware usa mV calibrados do ADC, que diferiram do multímetro em 14–20mV nos pontos anteriores; a sensibilidade final é 0,0272 V de entrada por mV do ADC. Ainda requer conferência em dois pontos após instalar o segundo 10k. Não é calibração final nem proteção. C3 permanece igual; conversão e portal atualizados apenas no S3.
+
+Após instalar o segundo 10k: usuário mediu 1,948 V no GPIO com Vin=10 V. Porém o ADC2 passou a retornar RAW=0/mV=0 com ESP_OK durante cinco leituras, duração 115–123 µs. A conversão não foi ajustada com esses dados inválidos. S3 rejeita RAW 0 e 4095, retorna volts=null e indica leitura inválida no portal. Precisa reiniciar o C3 e investigar repetibilidade; não há precisão validada nesta condição.
+
+Após reiniciar o C3, leituras retornaram: 1978,1978,1973,1972,1978 mV (média 1975,8), 40–41 µs. Usuário confirmou entrada de 10 V e multímetro no GPIO de 1,948 V. Offset atualizado usando 1976 mV do ADC e Vin=10 V, mantendo inclinação estimada 27,2: Vin=27,2*VADC-43,7472. Validação de inclinação em segundo ponto pendente.

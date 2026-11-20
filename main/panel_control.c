@@ -1,4 +1,5 @@
 #include "panel_control.h"
+#include "vcc_calibration.h"
 #include "lighting.h"
 #include "panel_ota.h"
 #include "panel_protocol.h"
@@ -54,7 +55,7 @@ static void receive(const esp_now_recv_info_t *info,const uint8_t *data,int len)
         panel_vcc_t d;memcpy(&d,data,sizeof(d));
         if(d.magic!=PANEL_MAGIC||d.version!=PANEL_VERSION||d.type!=7||d.valid>1||d.calibrated>1||d.raw>4095)return;
         portENTER_CRITICAL(&mux);vcc_diagnostics=d;vcc_at=esp_timer_get_time()/1000;portEXIT_CRITICAL(&mux);
-        ESP_LOGI("panel_vcc","seq=%lu raw=%u mv=%u cal=%u err=%ld read_us=%lu",(unsigned long)d.sequence,d.raw,d.mv,d.calibrated,(long)d.error,(unsigned long)d.duration_us);return;
+        ESP_LOGI("panel_vcc","seq=%lu raw=%u mv=%u cal=%u err=%ld read_us=%lu vcc=%.2fV",(unsigned long)d.sequence,d.raw,d.mv,d.calibrated,(long)d.error,(unsigned long)d.duration_us,(d.valid&&vcc_raw_valid(d.raw))?vcc_from_mv(d.mv):NAN);return;
     }
     if(len==sizeof(panel_adc_t)){
         panel_adc_t d;memcpy(&d,data,sizeof(d));
@@ -159,10 +160,10 @@ void panel_add_status(cJSON *root){
     cJSON_AddStringToObject(p,"error",error==ESP_OK?"":esp_err_to_name(error));
     portENTER_CRITICAL(&mux);panel_vcc_t vd=vcc_diagnostics;uint64_t va=vcc_at;portEXIT_CRITICAL(&mux);
     bool vf=last&&now-last<1500&&va&&now-va<2500&&vd.boot==boot;
-    cJSON *v=cJSON_AddObjectToObject(p,"vcc");cJSON_AddBoolToObject(v,"fresh",vf);cJSON_AddBoolToObject(v,"valid",vf&&vd.valid);
+    cJSON *v=cJSON_AddObjectToObject(p,"vcc");cJSON_AddBoolToObject(v,"fresh",vf);cJSON_AddBoolToObject(v,"valid",vf&&vd.valid&&vcc_raw_valid(vd.raw));
     cJSON_AddBoolToObject(v,"calibrated",vd.calibrated);cJSON_AddNumberToObject(v,"raw",vd.raw);cJSON_AddNumberToObject(v,"mv",vd.mv);
-    cJSON_AddNumberToObject(v,"volts",vd.mv*.0078);cJSON_AddNumberToObject(v,"duration_us",vd.duration_us);
-    cJSON_AddStringToObject(v,"error",vf?esp_err_to_name(vd.error):"Sem amostra recente");
+    if(vf&&vd.valid&&vcc_raw_valid(vd.raw))cJSON_AddNumberToObject(v,"volts",vcc_from_mv(vd.mv));else cJSON_AddNullToObject(v,"volts");cJSON_AddNumberToObject(v,"duration_us",vd.duration_us);
+    cJSON_AddStringToObject(v,"error",vf?(!vcc_raw_valid(vd.raw)?"ADC2 no limite da escala; leitura inválida":esp_err_to_name(vd.error)):"Sem amostra recente");
     cJSON *a=cJSON_AddArrayToObject(p,"bindings");
     for(int i=0;i<5;i++){
         const knob_binding_t *binding=&c.binding[i];cJSON *b=cJSON_CreateObject();
